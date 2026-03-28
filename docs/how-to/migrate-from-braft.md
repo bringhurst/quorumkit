@@ -5,7 +5,7 @@ sidebar_position: 4
 
 # Migrate from braft
 
-This page is for the practical side of migration: where to start, what to change first, and what to leave alone until later.
+This page is about the practical side of migration: where to start, what to change first, and what to leave alone until later.
 
 ## Start with the public surface
 

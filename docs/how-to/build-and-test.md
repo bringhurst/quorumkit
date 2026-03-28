@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Build and test QuorumKit
 
-Use this page when you need the practical commands, not the grand tour.
+Use this page when you just want the commands.
 
 ## Build the project
 
@@ -38,7 +38,7 @@ For local interactive preview:
 npm run start
 ```
 
-The production docs site lives under `/docs`, and the site root redirects there.
+The published docs live under `/docs`, and the site root redirects there.
 
 ## Common places to look
 

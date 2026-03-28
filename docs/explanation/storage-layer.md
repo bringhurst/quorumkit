@@ -1,13 +1,13 @@
 ---
-title: Storage Layer
+title: Storage layer
 sidebar_position: 8
 ---
 
-# Storage Layer
+# Storage layer
 
-Storage is one of the places where QuorumKit has to be both ambitious and practical.
+Storage is one of the places where QuorumKit has to balance cleanup with compatibility.
 
-The library wants a clean storage model: backend-neutral contracts, swappable implementations, deterministic fakes for tests, and enough separation from the core that changing persistence does not mean rewriting consensus logic. At the same time, it has to respect the world it comes from. Existing braft storage backends matter, and migration between backends matters just as much.
+The goal is a clean storage model: backend-neutral contracts, swappable implementations, deterministic fakes for tests, and enough separation from the core that changing persistence does not mean rewriting consensus logic. At the same time, the existing braft storage backends still matter, and migration between backends matters too.
 
 ```mermaid
 flowchart TD

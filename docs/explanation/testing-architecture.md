@@ -1,11 +1,11 @@
 ---
-title: Testing Architecture
+title: Testing architecture
 sidebar_position: 9
 ---
 
-# Testing Architecture
+# Testing architecture
 
-QuorumKit is designed so that its testing story follows the architecture instead of fighting it.
+QuorumKit is set up so the testing story follows the architecture instead of fighting it.
 
 ```text
 test/

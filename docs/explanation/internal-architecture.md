@@ -1,15 +1,15 @@
 ---
-title: Internal Architecture
+title: Internal architecture
 sidebar_position: 5
 ---
 
-# Internal Architecture
+# Internal architecture
 
 Everything under `src/internal` exists to support the public surfaces without becoming one.
 
-That distinction matters. Once code is clearly internal, the project can split modules, replace implementations, or move pieces around without turning every refactor into a breaking API debate.
+Once code is clearly internal, the project can split modules, replace implementations, or move pieces around without turning every refactor into an API debate.
 
-## The Main Internal Areas
+## The main internal areas
 
 ```text
 src/internal/

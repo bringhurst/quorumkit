@@ -13,4 +13,4 @@ bazel/       Bazel-only wrappers and BUILD glue
 packaging/   package-manager metadata and integration helpers
 ```
 
-The source tree decides what is public, what is internal, and where optional pieces plug in. Build and packaging tools should consume that structure rather than forcing the repository into tool-specific shapes.
+The source tree decides what is public, what is internal, and where optional pieces plug in. Build and packaging tools should follow that structure rather than forcing the repository into tool-specific shapes.

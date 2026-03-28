@@ -5,6 +5,6 @@ sidebar_position: 11
 
 # Protocols and features
 
-Not every part of the repository belongs in the same conceptual bucket.
+Some parts of the repository are core protocol machinery. Other parts are features layered around that core.
 
-Some pieces are the core of the replicated state machine: elections, replication, commit semantics, and application order. Other pieces are the machinery that makes a real system usable: snapshots, administration, discovery, witness support, leases, transport adapters, storage migration helpers, telemetry, and so on.
+The core covers elections, replication, commit semantics, and application order. The surrounding pieces are what make the system usable in practice: snapshots, administration, discovery, witness support, leases, transport adapters, storage migration helpers, telemetry, and so on.

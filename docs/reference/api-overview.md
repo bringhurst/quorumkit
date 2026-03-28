@@ -5,9 +5,9 @@ sidebar_position: 1
 
 # Public API overview
 
-QuorumKit exposes two public faces.
+QuorumKit has two public surfaces.
 
-The first is the one new code should use: `include/quorumkit`. It is the vocabulary the project wants to stand behind long term. The second is `include/braft`, a compatibility surface for code that already speaks in braft terms. Both are public. Only one is canonical.
+New code should use `include/quorumkit`. Existing code can keep using `include/braft`. Both are supported. `quorumkit` is the main API; `braft` is the compatibility layer.
 
 ## The QuorumKit surface
 
@@ -26,7 +26,7 @@ include/quorumkit/
     throttle.h
 ```
 
-Taken together, these headers describe the system the way a user thinks about it: identities, nodes, administration, discovery, persistence, and a small set of optional extensions.
+Together, these headers describe the system in the terms most users care about: identities, nodes, administration, discovery, persistence, and a few optional extensions.
 
 ## The braft surface
 
@@ -45,7 +45,7 @@ include/braft/
   protobuf_file.h
 ```
 
-That surface exists so existing integrations can keep compiling while the repository moves toward a cleaner internal shape.
+That surface is there so existing integrations keep compiling while the rest of the project moves in a cleaner direction.
 
 ## How the two surfaces relate
 
@@ -55,7 +55,7 @@ flowchart LR
     Q --> I[Internal Implementation]
 ```
 
-That direction matters. QuorumKit defines the model. The braft layer adapts to it. The project does not grow a second independent public model just because old names still exist.
+That direction matters. QuorumKit defines the model. The braft layer adapts to it. Old names are not a reason to grow a second API design.
 
 ## Where to go next
 

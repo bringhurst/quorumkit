@@ -5,9 +5,9 @@ sidebar_position: 1
 
 # Build your first cluster
 
-This tutorial is the shortest path to getting your bearings.
+This is the quickest way to get oriented.
 
-The goal is not to teach every part of QuorumKit at once. The goal is to get the project building, run one of the sample applications, and connect the moving pieces to the words you will see elsewhere in the docs.
+You are going to build the project, run one sample application, and use that as a reference point for the rest of the docs.
 
 By the end, you will know where the examples live, how the local build works, what a cluster looks like in this repository, and which docs to read next.
 
@@ -27,7 +27,7 @@ cmake -S . -B bld -DBUILD_UNIT_TESTS=ON
 cmake --build bld
 ```
 
-This gives you a local build tree and verifies that the project is in a usable state.
+If this works, the local build is in good shape.
 
 ## Step 2: pick an example
 
@@ -56,11 +56,11 @@ In a second shell, run the client:
 bash run_client.sh
 ```
 
-At this point you are looking at the full loop: client request, leader handling, replication, commit, and state machine application.
+At this point you have the full loop in front of you: client request, leader handling, replication, commit, and state machine application.
 
 ## Step 4: connect what you saw to the docs
 
-Once the example is running, the rest of the docs become easier to read.
+Once the example is running, the rest of the docs should feel a lot less abstract.
 
 - For the big picture, read [Architecture overview](../architecture) and [Canonical public API](../explanation/canonical-public-api).
 - To understand the public surfaces, read [Public API overview](../reference/api-overview).
@@ -75,4 +75,4 @@ If you want to keep exploring, the usual order is:
 3. [Public API overview](../reference/api-overview)
 4. [Architecture overview](../architecture)
 
-This tutorial is intentionally narrow. It gets you from zero to a running cluster and then hands off to the rest of the documentation.
+That is all this tutorial is trying to do: get you to a running cluster and then hand you off to the rest of the documentation.

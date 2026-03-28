@@ -1,13 +1,13 @@
 ---
-title: braft Compatibility Surface
+title: braft compatibility surface
 sidebar_position: 4
 ---
 
-# braft Compatibility Surface
+# braft compatibility surface
 
 The braft layer is public, supported, and intentionally secondary.
 
-It exists for a simple reason: real code already depends on braft headers, type names, and calling patterns. QuorumKit keeps that code working, but it does so by treating compatibility as a clearly named layer rather than letting it keep masquerading as the center of the project.
+Real code already depends on braft headers, type names, and calling patterns. QuorumKit keeps that code working, but it does so through a clearly named compatibility layer rather than pretending braft is still the center of the project.
 
 ## How The Layer Sits In The System
 

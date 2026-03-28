@@ -28,4 +28,4 @@ npm --version
 node --version
 ```
 
-If those commands work, you are ready for the common docs and local build tasks.
+If those commands work, you are in good shape for the common local build and docs tasks.

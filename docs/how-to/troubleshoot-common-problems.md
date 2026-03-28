@@ -5,7 +5,7 @@ sidebar_position: 5
 
 # Troubleshoot common problems
 
-This page collects the annoying, ordinary failures that slow down local work.
+This page collects the common failures that slow down local work.
 
 ## Docs build fails with broken links
 

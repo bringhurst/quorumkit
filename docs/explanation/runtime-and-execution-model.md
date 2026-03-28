@@ -5,7 +5,7 @@ sidebar_position: 6
 
 # Runtime and execution model
 
-QuorumKit treats the core of the system as a state machine and the runtime as everything needed to let that state machine live in the world.
+QuorumKit treats the core as a state machine. The runtime is everything around it that makes it useful in a real program.
 
 ```mermaid
 flowchart LR
@@ -18,4 +18,4 @@ flowchart LR
     Core --> Store[Storage]
 ```
 
-The core should not decide what time it is, how work gets scheduled, how packets move, or how bytes reach disk. It asks for those services through interfaces.
+The core should not decide what time it is, how work is scheduled, how packets move, or how bytes reach disk. It asks for those services through interfaces.

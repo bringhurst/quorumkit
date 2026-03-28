@@ -12,7 +12,7 @@ QuorumKit has two public APIs and one implementation beneath them.
 - `braft` remains as a compatibility layer.
 - `internal` is where the engine, adapters, and test infrastructure live.
 
-That sounds simple, but it changes the shape of the repository in an important way. Public code becomes easy to spot. Compatibility becomes explicit. Internal code gets room to change aggressively without dragging users through every refactor.
+The important part is not the count. It is the boundary. Public code is easy to spot. Compatibility is explicit. Internal code has room to change without turning every refactor into a migration project for users.
 
 ## The shape of the system
 
@@ -28,15 +28,13 @@ flowchart TD
     I --> D[Deterministic and Integration Tests]
 ```
 
-The key idea is that the public surface stays small while the implementation grows inward, not outward.
+The public surface stays small. The implementation grows inward, not outward.
 
 ## What this architecture optimizes for
 
-The project is trying to make a few things true at the same time.
+New code should read like QuorumKit, not like a fork that never decided what it wanted to be. The compatibility layer should stay a bridge, not become a second center of gravity. The core should stay small enough to reason about, while the surrounding system stays modular enough to swap transports, storage engines, runtimes, and packaging without rewriting everything.
 
-First, new code should read like QuorumKit, not like a historical fork. Second, compatibility should be honest about what it is: a bridge, not a second center of gravity. Third, the consensus core should stay small enough to reason about clearly, while the surrounding system remains modular enough to swap transports, storage engines, runtimes, and packaging strategies without rewriting the heart of the library.
-
-The testing story follows the same logic. Public behavior should be easy to test directly. The core should be able to run under deterministic clocks, transports, and storage fakes. The whole system should be open to simulation rather than only end-to-end smoke tests.
+Testing follows the same line of thought. Public behavior should be easy to test directly. The core should run under deterministic clocks, transports, and storage fakes. The system should be open to simulation, not just end-to-end smoke tests.
 
 ## Read the rest of the explanation section
 

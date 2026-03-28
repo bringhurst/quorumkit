@@ -6,7 +6,7 @@ slug: /
 
 # QuorumKit Documentation
 
-QuorumKit is a Raft library with a clean public API, an explicit braft compatibility layer, and a design that is trying to keep the core small enough to reason about clearly.
+QuorumKit is a Raft library. The docs are organized around the shape of the project: the QuorumKit API, the braft compatibility layer, and the internals that sit underneath both.
 
 These docs now follow Diataxis.
 
@@ -45,16 +45,16 @@ flowchart TD
 
 ### Tutorials
 
-Tutorials are for learning. They are hands-on, opinionated, and meant to get you moving.
+Tutorials are for learning by doing.
 
 ### How-to guides
 
-How-to guides are for getting something done quickly: build the repo, run the docs, navigate the code, run the examples.
+How-to guides are for specific tasks: build the repo, run the docs, navigate the code, run the examples.
 
 ### Reference
 
-Reference is where the facts live: API surfaces, repo map, examples, and build/deploy details.
+Reference is the factual part: API surfaces, repo map, examples, and build details.
 
 ### Explanation
 
-Explanation is where the design lives: architecture, compatibility, runtime, transport, storage, testing, and migration.
+Explanation covers the design: architecture, compatibility, runtime, transport, storage, testing, and migration.

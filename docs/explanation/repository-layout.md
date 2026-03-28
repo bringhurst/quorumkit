@@ -1,15 +1,15 @@
 ---
-title: Repository Layout
+title: Repository layout
 sidebar_position: 2
 ---
 
-# Repository Layout
+# Repository layout
 
-The repository is laid out so that a reader can tell, almost at a glance, what is public and what is not.
+The repository is laid out so that you can tell, almost at a glance, what is public and what is not.
 
-That is more important than it sounds. One of the easiest ways a systems library becomes hard to evolve is by letting implementation headers masquerade as APIs. QuorumKit tries to make the boundary visible in the tree itself.
+That matters because systems code gets hard to evolve when implementation headers start masquerading as APIs. QuorumKit tries to make that boundary visible in the tree itself.
 
-## The Shape Of The Tree
+## The shape of the tree
 
 ```text
 include/
@@ -42,7 +42,7 @@ packaging/
 docs/
 ```
 
-## The Important Boundaries
+## The important boundaries
 
 `include/quorumkit` is the public API the project is built around. These headers are installed, documented, and tested as contract.
 
@@ -62,4 +62,4 @@ flowchart LR
     I --> I
 ```
 
-The arrows only go inward. Internal code does not depend on the compatibility headers. The compatibility layer does not define the model. The QuorumKit surface does not leak internal implementation types.
+The arrows only go inward. Internal code does not depend on compatibility headers. The compatibility layer does not define the model. The QuorumKit surface does not leak internal implementation types.

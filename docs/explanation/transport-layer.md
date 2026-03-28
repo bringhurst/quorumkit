@@ -1,9 +1,9 @@
 ---
-title: Transport Layer
+title: Transport layer
 sidebar_position: 7
 ---
 
-# Transport Layer
+# Transport layer
 
 Transport is an adapter in QuorumKit, not the center of the design.
 
@@ -17,4 +17,4 @@ flowchart TD
     Transport --> Sim[In-Memory Simulation Adapter]
 ```
 
-The core speaks in protocol and identity. Transport adapters decide how those messages are delivered.
+The core speaks in protocol and identity. Transport adapters decide how those messages get from one place to another.
