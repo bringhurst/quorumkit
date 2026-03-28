@@ -6,53 +6,55 @@ slug: /
 
 # QuorumKit Documentation
 
-QuorumKit is a Raft library, but the interesting part is not just that it replicates a log. The interesting part is how the repository is being shaped: a clean QuorumKit API, a sharply bounded braft compatibility layer, a small core that can be reasoned about precisely, and a testing story built around deterministic simulation instead of hope.
+QuorumKit is a Raft library with a clean public API, an explicit braft compatibility layer, and a design that is trying to keep the core small enough to reason about clearly.
 
-If you are new here, start with the basics and work inward.
+These docs now follow Diataxis.
 
-1. [Quick Start](./getting-started/quick-start)
-2. [Repository Tour](./getting-started/repository-tour)
-3. [Mental Model](./concepts/mental-model)
-4. [Public API Overview](./api/overview)
-5. [Architecture Overview](./architecture)
+- Tutorials help you learn by doing.
+- How-to guides help you complete a task.
+- Reference gives you the factual material.
+- Explanation tells you why the system looks the way it does.
 
-## What You Will Find Here
+## Start here
 
-The docs are organized around the same boundaries as the code.
+If you are new to the project, this is a good reading order:
 
-- `docs/getting-started/` helps you build the repo, find your way around, and run examples.
-- `docs/concepts/` defines the vocabulary: what a node is, what the public boundary is, and why testability matters.
-- `docs/api/` explains the two supported public surfaces: QuorumKit and braft compatibility.
-- `docs/architecture/` goes deep on runtime, transport, storage, testing, packaging, and the internal shape of the system.
+1. [Build your first cluster](./tutorials/first-cluster)
+2. [Check prerequisites](./how-to/prerequisites)
+3. [Build and test QuorumKit](./how-to/build-and-test)
+4. [Public API overview](./reference/api-overview)
+5. [Architecture overview](./architecture)
 
 ```mermaid
 flowchart TD
-    Home[Documentation Home] --> Start[Getting Started]
-    Home --> Concepts[Concepts]
-    Home --> Api[API]
-    Home --> Arch[Architecture]
-    Start --> Build[Build and Test]
-    Start --> Tour[Repository Tour]
-    Start --> Examples[Examples]
-    Concepts --> Model[System Model]
-    Concepts --> Boundaries[Public and Internal Boundaries]
-    Concepts --> Testability[Design for Testability]
-    Api --> Surfaces[Public Surface Map]
-    Arch --> Runtime[Runtime]
-    Arch --> Transport[Transport]
-    Arch --> Storage[Storage]
-    Arch --> Testing[Testing]
+    Home[Documentation Home] --> Tutorials[Tutorials]
+    Home --> HowTo[How-To Guides]
+    Home --> Reference[Reference]
+    Home --> Explanation[Explanation]
+    Tutorials --> FirstCluster[First Cluster]
+    HowTo --> BuildTest[Build and Test]
+    HowTo --> Examples[Run the Examples]
+    Reference --> API[API Overview]
+    Reference --> RepoMap[Repository Map]
+    Explanation --> Architecture[Architecture]
+    Explanation --> Runtime[Runtime]
+    Explanation --> Storage[Storage]
 ```
 
-## How To Read These Docs
+## The four modes
 
-These pages are not meant to replace the headers. They are meant to make the headers easier to read.
+### Tutorials
 
-The usual path is:
+Tutorials are for learning. They are hands-on, opinionated, and meant to get you moving.
 
-- read the docs to understand the shape of the system,
-- read the public headers to understand the exact contracts,
-- read the examples to see how those contracts look in a real application,
-- read internal code only when you care about implementation details.
+### How-to guides
 
-That is the standard the docs are written to. They should feel like a careful engineering guide, not a pile of scattered notes.
+How-to guides are for getting something done quickly: build the repo, run the docs, navigate the code, run the examples.
+
+### Reference
+
+Reference is where the facts live: API surfaces, repo map, examples, and build/deploy details.
+
+### Explanation
+
+Explanation is where the design lives: architecture, compatibility, runtime, transport, storage, testing, and migration.

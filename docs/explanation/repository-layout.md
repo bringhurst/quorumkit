@@ -50,17 +50,6 @@ docs/
 
 `src/quorumkit` holds the code that implements the public QuorumKit layer. `src/braft_compat` is where the compatibility bridge lives. `src/internal` is everything behind that public wall: the engine, adapters, and helpers that users should not need to include directly.
 
-```text
-src/internal/
-  core/       deterministic consensus core and state transitions
-  runtime/    scheduling, timers, clocks, random sources, threading adapters
-  rpc/        transport-neutral RPC contracts and concrete adapters
-  storage/    storage contracts, registries, and backend adapters
-  snapshot/   snapshot persistence and snapshot transfer logic
-  proto/      wire formats and serialization adapters
-  base/       internal helpers that never appear in public headers
-```
-
 ## Dependency Direction
 
 ```mermaid
@@ -74,13 +63,3 @@ flowchart LR
 ```
 
 The arrows only go inward. Internal code does not depend on the compatibility headers. The compatibility layer does not define the model. The QuorumKit surface does not leak internal implementation types.
-
-## What Gets Installed
-
-Only `include/quorumkit/**` and `include/braft/**` are installed. Headers under `src/**` do not become public simply because they exist.
-
-That rule keeps the contract honest. A user should not have to guess whether a file like `replicator.h` is safe to depend on. If it sits under `src/internal`, the answer is already no.
-
-## Naming
-
-QuorumKit headers use concept names because they are supposed to read like a stable interface: `types.h`, `node.h`, `admin.h`, `discovery.h`, `storage.h`. The compatibility layer preserves the older braft names where that matters. Internal code can use whatever implementation-oriented names make sense, because internal code is free to change.

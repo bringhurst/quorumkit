@@ -1,9 +1,0 @@
-{
-  "label": "API",
-  "position": 4,
-  "link": {
-    "type": "generated-index",
-    "title": "API Surfaces",
-    "description": "Canonical QuorumKit APIs, compatibility APIs, and header organization."
-  }
-}

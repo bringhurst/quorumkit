@@ -1,15 +1,15 @@
 ---
-title: Public API Overview
+title: Public API overview
 sidebar_position: 1
 ---
 
-# Public API Overview
+# Public API overview
 
 QuorumKit exposes two public faces.
 
 The first is the one new code should use: `include/quorumkit`. It is the vocabulary the project wants to stand behind long term. The second is `include/braft`, a compatibility surface for code that already speaks in braft terms. Both are public. Only one is canonical.
 
-## The QuorumKit Surface
+## The QuorumKit surface
 
 The QuorumKit headers are organized by concept rather than by implementation history.
 
@@ -28,7 +28,7 @@ include/quorumkit/
 
 Taken together, these headers describe the system the way a user thinks about it: identities, nodes, administration, discovery, persistence, and a small set of optional extensions.
 
-## The braft Surface
+## The braft surface
 
 The compatibility headers keep the old vocabulary available.
 
@@ -47,7 +47,7 @@ include/braft/
 
 That surface exists so existing integrations can keep compiling while the repository moves toward a cleaner internal shape.
 
-## How The Two Surfaces Relate
+## How the two surfaces relate
 
 ```mermaid
 flowchart LR
@@ -57,15 +57,7 @@ flowchart LR
 
 That direction matters. QuorumKit defines the model. The braft layer adapts to it. The project does not grow a second independent public model just because old names still exist.
 
-## What QuorumKit Keeps Out Of The API
+## Where to go next
 
-The QuorumKit API is deliberately narrower than the implementation beneath it. It does not expose brpc servers, protobuf service base classes, IPv4-only endpoint types, or backend-specific storage objects. Those are adapter concerns. The public API should survive transport changes, storage swaps, and build-system churn without forcing users to rewrite their application code.
-
-## How To Use This Section
-
-If you are writing new code, stay on the QuorumKit side and treat the braft pages as a reference for compatibility behavior.
-
-- `docs/architecture/public-api.md`
-- `docs/architecture/braft-compat.md`
-
-Those pages go deeper on how the public boundary is shaped and what each surface is expected to carry.
+- For the public API philosophy, read [Canonical public API](../explanation/canonical-public-api).
+- For compatibility details, read [braft compatibility surface](../explanation/braft-compatibility-surface).
