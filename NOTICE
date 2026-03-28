@@ -1,0 +1,11 @@
+QuorumKit
+Copyright 2026 QuorumKit contributors
+
+This product is based on braft.
+
+braft
+Copyright Baidu, Inc. and braft contributors
+
+QuorumKit is distributed under the Apache License, Version 2.0.
+The repository preserves upstream copyright and license notices where
+required, along with notices for subsequent modifications.
