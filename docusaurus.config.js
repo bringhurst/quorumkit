@@ -4,8 +4,8 @@
 const config = {
   title: 'QuorumKit',
   tagline: 'Consensus and replicated state machines',
-  url: 'https://bringhurst.github.io',
-  baseUrl: '/quorumkit/',
+  url: 'https://quorumkit.org',
+  baseUrl: '/',
   organizationName: 'bringhurst',
   projectName: 'quorumkit',
   onBrokenLinks: 'throw',
@@ -25,11 +25,10 @@ const config = {
       {
         docs: {
           path: 'docs',
-          routeBasePath: '/',
+          routeBasePath: '/docs',
           sidebarPath: require.resolve('./sidebars.js')
         },
         blog: false,
-        pages: false,
         theme: {
           customCss: require.resolve('./src/css/custom.css')
         }
@@ -38,8 +37,12 @@ const config = {
   ],
   themeConfig: {
     navbar: {
-      title: 'QuorumKit',
       items: [
+        {
+          to: '/docs/',
+          label: 'QuorumKit',
+          position: 'left'
+        },
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
@@ -61,11 +64,11 @@ const config = {
           items: [
             {
               label: 'Documentation Home',
-              to: '/'
+              to: '/docs/'
             },
             {
               label: 'Architecture',
-              to: '/architecture'
+              to: '/docs/architecture'
             }
           ]
         },
