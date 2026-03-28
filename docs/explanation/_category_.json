@@ -1,0 +1,9 @@
+{
+  "label": "Explanation",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "Explanation",
+    "description": "Background, design rationale, architecture, and system concepts."
+  }
+}

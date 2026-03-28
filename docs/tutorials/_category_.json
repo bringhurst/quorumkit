@@ -1,0 +1,9 @@
+{
+  "label": "Tutorials",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "Tutorials",
+    "description": "Learning-oriented guides that walk through QuorumKit step by step."
+  }
+}

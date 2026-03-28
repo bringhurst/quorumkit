@@ -1,0 +1,25 @@
+:root {
+  --ifm-color-primary: #215b52;
+  --ifm-color-primary-dark: #1e5149;
+  --ifm-color-primary-darker: #1c4d45;
+  --ifm-color-primary-darkest: #173f39;
+  --ifm-color-primary-light: #24655b;
+  --ifm-color-primary-lighter: #26695f;
+  --ifm-color-primary-lightest: #2b786c;
+  --ifm-background-color: #f7f4ec;
+  --ifm-navbar-background-color: #f1ecdf;
+  --ifm-footer-background-color: #1a2725;
+  --ifm-code-font-size: 95%;
+}
+
+html {
+  --ifm-font-family-base: "Source Serif 4", Georgia, serif;
+  --ifm-font-family-monospace: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+}
+
+.theme-doc-markdown h1,
+.theme-doc-markdown h2,
+.theme-doc-markdown h3,
+.navbar__title {
+  letter-spacing: -0.02em;
+}
