@@ -1,0 +1,36 @@
+# Build outputs
+*.o
+*.a
+*.so
+*.out
+*.log
+*.prof
+
+# Generated protobuf sources
+*.pb.cc
+*.pb.h
+
+# Runtime and build directories
+/runtime/
+/output/
+/test/output/
+/build/
+/third-party/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+Testing/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+
+# Editor files
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+**/.DS_Store
