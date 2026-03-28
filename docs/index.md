@@ -6,19 +6,9 @@ slug: /
 
 # QuorumKit Documentation
 
-This documentation tree is the primary reference for the QuorumKit repository, its public APIs, its compatibility surface, and its internal architecture.
+QuorumKit is a Raft library, but the interesting part is not just that it replicates a log. The interesting part is how the repository is being shaped: a clean QuorumKit API, a sharply bounded braft compatibility layer, a small core that can be reasoned about precisely, and a testing story built around deterministic simulation instead of hope.
 
-QuorumKit has three distinct faces:
-
-- a canonical `quorumkit` public API,
-- a supported `braft` compatibility API,
-- an internal implementation surface that contains the core, adapters, and testing infrastructure.
-
-QuorumKit preserves storage continuity across the compatibility boundary. It works with the existing braft storage model and treats migration between storage backends as part of the storage architecture rather than as an external one-off conversion problem.
-
-## Reading Guide
-
-If you are new to the repository, read the docs in this order:
+If you are new here, start with the basics and work inward.
 
 1. [Quick Start](./getting-started/quick-start)
 2. [Repository Tour](./getting-started/repository-tour)
@@ -26,7 +16,14 @@ If you are new to the repository, read the docs in this order:
 4. [Public API Overview](./api/overview)
 5. [Architecture Overview](./architecture)
 
-## Documentation Map
+## What You Will Find Here
+
+The docs are organized around the same boundaries as the code.
+
+- `docs/getting-started/` helps you build the repo, find your way around, and run examples.
+- `docs/concepts/` defines the vocabulary: what a node is, what the public boundary is, and why testability matters.
+- `docs/api/` explains the two supported public surfaces: QuorumKit and braft compatibility.
+- `docs/architecture/` goes deep on runtime, transport, storage, testing, packaging, and the internal shape of the system.
 
 ```mermaid
 flowchart TD
@@ -47,22 +44,15 @@ flowchart TD
     Arch --> Testing[Testing]
 ```
 
-## Sections
+## How To Read These Docs
 
-- `docs/getting-started/` explains how to build the repository, navigate the tree, and run examples.
-- `docs/concepts/` defines the vocabulary of the system.
-- `docs/api/` describes the public surfaces and how headers are organized.
-- `docs/architecture/` describes the internal architecture in detail.
+These pages are not meant to replace the headers. They are meant to make the headers easier to read.
 
-## Documentation Standard
+The usual path is:
 
-The docs and the public headers are aligned.
+- read the docs to understand the shape of the system,
+- read the public headers to understand the exact contracts,
+- read the examples to see how those contracts look in a real application,
+- read internal code only when you care about implementation details.
 
-The intended reading experience is:
-
-- read the docs to understand the large-scale structure,
-- read the public headers to understand exact contracts,
-- read the examples to see application hosting patterns,
-- read internal code only when implementation detail matters.
-
-This tree is organized around the actual boundaries of the repository: canonical API, compatibility API, internal implementation, and testing.
+That is the standard the docs are written to. They should feel like a careful engineering guide, not a pile of scattered notes.

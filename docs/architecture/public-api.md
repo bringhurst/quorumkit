@@ -5,9 +5,11 @@ sidebar_position: 3
 
 # Canonical Public API
 
-The canonical public surface of QuorumKit lives under `include/quorumkit`. It defines the vocabulary that users of the library depend on.
+The QuorumKit API lives under `include/quorumkit`. That is the surface new applications should learn, document against, and build on.
 
-## Public Header Set
+The point of this layout is not just cosmetic. It gives the library a vocabulary that matches the problem domain instead of mirroring whatever happened to exist in the implementation years ago.
+
+## The Header Set
 
 ```text
 include/quorumkit/
@@ -22,125 +24,38 @@ include/quorumkit/
     throttle.h
 ```
 
-Each header groups concepts by role rather than by inherited implementation file layout.
+Each header has a clear job.
 
-## Header Responsibilities
+- `types.h` is the shared vocabulary: identities, configurations, roles, and status objects.
+- `node.h` is the heart of the public surface. It covers node lifecycle, apply behavior, leadership, membership changes, and the user-facing state machine contract.
+- `admin.h` is for operational control: add a peer, remove one, transfer leadership, trigger snapshots, and related cluster actions.
+- `discovery.h` handles leader lookup and route-table style client behavior.
+- `storage.h` describes persistence as a set of contracts rather than a pile of backend classes.
+- `util.h` stays small. If something only helps the implementation, it belongs under `src/internal/base`, not in the public API.
+- `extensions/*` holds optional hooks such as custom filesystems and throttling.
 
-### `types.h`
+## What Makes This API Different
 
-`types.h` defines the stable domain model of the system.
+The QuorumKit API is trying to be stable in the right places and quiet in the wrong ones.
 
-This includes:
+It talks about nodes, groups, storage, and administration. It does not drag transport classes, thread-library types, protobuf service bases, or logging frameworks into every signature. A user should be able to understand the public model of the system without reverse-engineering brpc, bthread, or a specific storage plugin.
 
-- group identifiers,
-- node identifiers,
-- peer identifiers,
-- membership configuration,
-- roles such as replica and witness,
-- status and error types used across the public surface,
-- small value types shared by multiple APIs.
+## What The Headers Need To Explain
 
-This header does not define transport-specific endpoint classes or RPC-specific controller types.
+Public headers are not just declarations. They are the primary reference for the library.
 
-### `node.h`
+That means a good header tells you:
 
-`node.h` defines the replicated state machine host.
+- what problem a type or function exists to solve,
+- what the caller owns and what the library owns,
+- what may block and what will not,
+- what thread or callback context is in play,
+- what errors mean,
+- what invariants the caller has to respect.
 
-This includes:
+If someone has to go spelunking through `src/internal` just to understand how to call a public function safely, the header has not done its job.
 
-- node lifecycle,
-- state machine callbacks,
-- apply semantics,
-- leadership queries,
-- membership mutation entry points,
-- snapshot trigger entry points,
-- node configuration objects,
-- bootstrap and garbage-collection entry points when they are part of the stable surface.
-
-This header explains ordering guarantees, ownership rules for applied tasks, and the threading model visible to user callbacks.
-
-### `admin.h`
-
-`admin.h` defines cluster administration operations that target groups and peers from outside the normal apply path.
-
-This includes:
-
-- add peer,
-- remove peer,
-- change peers,
-- reset peer,
-- transfer leader,
-- snapshot trigger.
-
-### `discovery.h`
-
-`discovery.h` defines leader discovery and route-table style functions. It describes how a client finds the current leader, caches it, invalidates it, and refreshes it.
-
-### `storage.h`
-
-`storage.h` defines the contracts for the persistent state of the system.
-
-This includes:
-
-- log storage,
-- metadata storage,
-- snapshot storage,
-- backend capability descriptions,
-- backend registration and construction APIs,
-- backend-neutral configuration and injection points.
-
-### `util.h`
-
-`util.h` contains only helpers that are truly public concepts. It does not become a dumping ground for internal utilities.
-
-If a helper exists only because the implementation needs it, it belongs under `src/internal/base` instead.
-
-### `extensions/*`
-
-`extensions/filesystem.h` and `extensions/throttle.h` contain advanced extension points that are part of the supported public contract but are not required for basic use.
-
-## Public API Constraints
-
-The canonical public API does not expose the following implementation dependencies:
-
-- `brpc::Server`
-- `brpc::Channel`
-- `brpc::Controller`
-- protobuf service base classes
-- `butil::EndPoint`
-- `bthread` types
-- `gflags` flags
-- `glog` logging macros as part of the API contract
-- storage backend implementation classes
-
-This rule keeps QuorumKit stable even when the runtime, transport, storage, and build integrations change.
-
-## Documentation Standard For Headers
-
-Every public header is readable as a reference document.
-
-Each public header contains:
-
-- a file-level overview,
-- the role of the header in the API,
-- a glossary for terms that are specific to the header,
-- a stability note when relevant,
-- cross references to related public headers.
-
-Each public type or function documents:
-
-- purpose,
-- inputs and outputs,
-- ownership and lifetime,
-- blocking behavior,
-- concurrency behavior,
-- error behavior,
-- invariants,
-- preconditions,
-- postconditions,
-- minimal usage examples when the contract is subtle.
-
-## Public API Dependency Model
+## Dependency Shape
 
 ```mermaid
 flowchart TD
@@ -152,18 +67,10 @@ flowchart TD
     Ext[extensions/*] --> Storage
 ```
 
-`types.h` sits at the bottom of the public vocabulary. Other public headers depend on those shared types, but not on internal implementation headers.
+`types.h` sits near the bottom because it holds the shared nouns of the API. The rest of the surface builds on those nouns instead of inventing overlapping mini-models.
 
-## Public API Testability
+## Designed To Be Testable
 
-The public surface is designed for direct unit testing.
+The API is also shaped so that it can be tested directly. Creating a node should not require a live RPC server unless the caller chooses a real network adapter. Time and randomness should be injectable. Storage should be replaceable with in-memory fakes. Public API tests should stay on the public side of the boundary instead of cheating with private-member hacks.
 
-This means:
-
-- construction does not require a real RPC server unless the caller explicitly asks for a networked adapter,
-- time and randomness are injectable through configuration,
-- storage can be supplied as in-memory fakes,
-- transport can be replaced by an in-memory adapter,
-- public API tests do not reach through private members or compile with visibility hacks.
-
-The shape of the public API makes its own contract testable.
+That is not just test hygiene. It is one of the main reasons the API stays readable. When dependencies are explicit, the public model gets clearer.

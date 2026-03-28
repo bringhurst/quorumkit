@@ -5,22 +5,11 @@ sidebar_position: 7
 
 # Transport Layer
 
-QuorumKit treats transport as a replaceable adapter.
+Transport is an adapter in QuorumKit, not the center of the design.
 
-## Transport Neutrality
+That sounds like a small wording choice, but it has big consequences. If the public API starts speaking in brpc objects, IPv4-only endpoint types, or protobuf service inheritance, then transport stops being replaceable in any meaningful sense.
 
-The consensus model does not depend on:
-
-- brpc server registration,
-- brpc controller objects,
-- protobuf service inheritance,
-- IPv4-only endpoint classes,
-- socket-oriented address parsing,
-- a specific network stack.
-
-The transport layer defines how messages move, not what the replicated state machine means.
-
-## Transport Model
+## The Boundary
 
 ```mermaid
 flowchart TD
@@ -32,68 +21,24 @@ flowchart TD
     Transport --> Sim[In-Memory Simulation Adapter]
 ```
 
-## Identity And Addressing
+The core speaks in protocol and identity. Transport adapters decide how those messages are delivered.
 
-The canonical QuorumKit model separates logical identity from transport location.
+## Identity Is Not Addressing
 
-### Logical Identity
+One of the easiest ways to accidentally hard-wire a transport is to make peer identity mean “whatever address format this network stack likes.” QuorumKit keeps those ideas separate.
 
-Logical identity names a peer or node in the replication group. It is stable across transport changes.
+Logical identity names the peer in the replication group. Transport address says how to reach it in a particular deployment. That leaves room for IPv4, IPv6, host-and-port naming, RDMA or IB-style addresses, in-memory simulation channels, and other transport-specific schemes without rewriting the consensus-facing model.
 
-### Transport Address
+## What The Adapter Owns
 
-Transport address describes how to reach that logical identity in a concrete adapter.
+A transport adapter is responsible for the practical machinery: sending and receiving messages, request/response matching, connection reuse, cancellation, serialization hooks, and transport-specific observability. Those are real concerns, but they should not leak into the public API where they would become long-term obligations.
 
-The address model supports multiple schemes, including:
+## brpc Still Fits Here
 
-- IPv4 TCP endpoints,
-- IPv6 TCP endpoints,
-- host-and-port naming,
-- RDMA-oriented addresses,
-- in-memory simulation channels,
-- custom deployment-specific address forms.
+brpc remains a valid adapter. The braft compatibility layer can keep brpc-shaped entry points where needed, because that is part of honoring the old surface. What changes is the architectural meaning: brpc becomes one transport implementation among several possibilities instead of the language the whole library is forced to speak.
 
-The public API treats address as transport metadata, not as the core meaning of peer identity.
+## Discovery And Snapshot Transfer
 
-## Adapter Responsibilities
+Discovery sits beside transport, not inside it. Finding the current leader and remembering where to send client traffic is a different concern from moving bytes.
 
-Concrete transport adapters provide:
-
-- message send and receive,
-- request/response correlation,
-- server registration,
-- connection reuse,
-- cancellation,
-- serialization integration,
-- address parsing and rendering,
-- transport-specific metrics and observability.
-
-These concerns are internal adapter responsibilities, not public API obligations.
-
-## brpc Integration
-
-brpc exists as one transport adapter implementation. It does not define the canonical API.
-
-braft compatibility functions may keep brpc-shaped entry points because they preserve the original surface, but the QuorumKit public API remains transport-neutral.
-
-## Discovery And Routing
-
-Leader discovery is distinct from transport.
-
-- discovery resolves or refreshes the current leader for a group,
-- transport delivers messages to a chosen address,
-- address resolution maps a logical peer to a concrete transport address.
-
-This keeps route-table style logic independent from a specific RPC framework.
-
-## Snapshot Transfer
-
-Snapshot transport is separate from snapshot persistence.
-
-The system distinguishes:
-
-- snapshot data as persisted state,
-- snapshot transfer as transport activity,
-- snapshot import and export orchestration as internal workflow.
-
-This separation keeps snapshotting modular when transport changes.
+The same goes for snapshots. A snapshot is persisted state; snapshot transfer is how that state moves across the network. Keeping those apart makes both pieces easier to replace.

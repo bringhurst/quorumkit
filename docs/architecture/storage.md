@@ -5,21 +5,19 @@ sidebar_position: 8
 
 # Storage Layer
 
-QuorumKit treats storage as a set of backend-neutral contracts with backend-specific adapters.
+Storage is one of the places where QuorumKit has to be both ambitious and practical.
 
-Storage compatibility is a first-class requirement. The repository supports the existing braft storage backend family and treats migration between backends as part of the supported storage story.
+The library wants a clean storage model: backend-neutral contracts, swappable implementations, deterministic fakes for tests, and enough separation from the core that changing persistence does not mean rewriting consensus logic. At the same time, it has to respect the world it comes from. Existing braft storage backends matter, and migration between backends matters just as much.
 
-## Storage Roles
+## Three Kinds Of Persistent State
 
-The architecture separates persistent state into three public contracts:
+The public model separates persistence into three contracts.
 
-- log storage,
-- metadata storage,
-- snapshot storage.
+- log storage holds the replicated log,
+- metadata storage holds durable node metadata such as term and vote,
+- snapshot storage holds materialized snapshots and the machinery around them.
 
-Each contract has its own lifecycle, invariants, capability set, and test suite.
-
-## Storage Model
+That split is not arbitrary. These parts of the system have different lifecycles, different performance profiles, and different migration stories.
 
 ```mermaid
 flowchart TD
@@ -37,143 +35,40 @@ flowchart TD
     Snap --> ObjSnap[Object Store Snapshot Backend]
 ```
 
-## Public Storage Contracts
+## What The Contracts Need To Say Clearly
 
-### Log Storage
+Good storage interfaces are not just method lists. They have to pin down behavior.
 
-Log storage defines the ordered replicated log.
+For the log, that means append order, truncation, reset after snapshot installation, crash consistency, and ownership of returned entries. For metadata, it means durability and atomicity. For snapshots, it means reader and writer lifecycles, metadata rules, and how copy or import operations behave.
 
-The public contract defines:
-
-- index ordering,
-- append semantics,
-- read semantics,
-- truncation semantics,
-- reset semantics after snapshot install,
-- crash consistency expectations,
-- ownership rules for returned entries.
-
-### Metadata Storage
-
-Metadata storage defines durable node metadata such as term, vote, and versioned group metadata.
-
-The public contract defines:
-
-- durability expectations,
-- atomicity expectations,
-- group scoping,
-- garbage-collection semantics.
-
-### Snapshot Storage
-
-Snapshot storage defines persisted snapshots and snapshot copy orchestration hooks.
-
-The public contract defines:
-
-- snapshot writer lifecycle,
-- snapshot reader lifecycle,
-- metadata save and load behavior,
-- copy-from semantics,
-- optional extension points such as throttling and custom filesystems.
-
-## Backend Modularity
-
-Storage backends are adapters selected by configuration or explicit dependency injection.
-
-The architecture supports:
-
-- the existing braft storage backends,
-- local segment-based logs,
-- in-memory test backends,
-- RocksDB-backed logs and metadata,
-- SQLite-backed logs and metadata,
-- alternative snapshot stores.
-
-The core does not need to change when a new backend is introduced.
+If those contracts are fuzzy, backend modularity turns into wishful thinking.
 
 ## Compatibility With Existing braft Storage
 
-QuorumKit maintains compatibility with the existing braft storage model so that an existing deployment does not need to discard persisted state to adopt the canonical API surface.
+QuorumKit is not trying to pretend old deployments never happened. The existing braft storage family remains part of the supported story. A team should be able to adopt the QuorumKit API without throwing away persisted state simply because the public vocabulary has improved.
 
-This compatibility covers:
+That includes the familiar log, raft metadata, and snapshot implementations, along with the URI-style construction paths that older systems may still rely on.
 
-- existing log storage implementations,
-- existing raft metadata storage implementations,
-- existing snapshot storage implementations,
-- existing URI-style backend selection patterns where deployed systems still depend on them.
+The compatibility layer keeps those entry points alive. The canonical QuorumKit API presents the same storage world more cleanly.
 
-The compatibility layer preserves the original construction path, while the canonical QuorumKit storage model presents the same storage family through a cleaner, backend-neutral contract.
+## Backend Modularity In Practice
 
-## Configuration Model
+Once the contracts are clear, the backend story gets much better. The core can talk to in-memory stores in tests, local segment stores in production, and other engines such as RocksDB or SQLite when they make sense for a deployment.
 
-The canonical QuorumKit API supports two ways to supply storage:
+Different backends will naturally support different capabilities. That is fine. The important part is to make those differences explicit instead of burying them in undocumented behavior.
 
-- direct injection of storage objects,
-- backend selection through a registry and backend-specific configuration.
+Some features are required. Others are optional: garbage collection, snapshot deduplication, custom filesystem hooks, import/export helpers, migration helpers, compaction hints, and similar extensions.
 
-URI-based configuration remains available as a compatibility-oriented construction pattern, but it is not the only expression of the storage model.
+## Migration Is Part Of The Design
 
-## Backend Migration
+Backend migration is not an afterthought here. It is part of the storage story.
 
-Backend migration is part of the storage architecture.
+Moving from an existing braft backend to a new QuorumKit-managed backend should be treated as a supported operation with validation, not as an improvised one-off script. The same applies when moving between backend families.
 
-The storage layer defines migration as a supported operation between backend implementations rather than as an ad hoc external script with repository-specific assumptions.
+In practice that can mean log replay, metadata translation, snapshot import/export, offline validation, or backend-aware migration tools. The exact mechanism will vary, but the architectural expectation is stable: migration preserves the durable replicated history that the core depends on.
 
-The migration model covers:
+## Why This Matters For Testing
 
-- migration from the existing braft storage backends into QuorumKit-managed backends,
-- migration between backend families such as local segment storage, RocksDB, and SQLite,
-- migration across log, metadata, and snapshot components in a coordinated way,
-- verification that migrated state preserves the durable replicated history required by the core.
+Storage modularity is not only about production flexibility. It is also what lets the same contract tests run against in-memory backends, local production backends, and future database-backed implementations. When the same suite passes everywhere, backend substitution becomes credible instead of aspirational.
 
-The exact mechanism may differ by backend pair, but the storage architecture treats migration as part of backend capability and backend tooling.
-
-Common migration paths include:
-
-- snapshot export and import,
-- log replay into a new backend,
-- metadata translation,
-- offline copy with validation,
-- backend-aware tooling that checks index, term, and snapshot boundaries.
-
-This keeps backend modularity practical for real systems instead of purely theoretical.
-
-## Capability Model
-
-Not every backend needs to support every optional feature.
-
-The architecture distinguishes:
-
-- required capabilities,
-- optional capabilities,
-- backend-specific tuning options.
-
-Examples of optional capabilities include:
-
-- garbage collection,
-- multi-node shared storage,
-- snapshot deduplication,
-- custom filesystem integration,
-- import/export helpers,
-- migration helpers,
-- compaction hints.
-
-## Storage Testability
-
-Every storage contract has backend-neutral contract tests.
-
-The same behavioral suite runs against:
-
-- the existing braft-compatible backends,
-- memory backends,
-- local production backends,
-- database backends,
-- any new backend added later.
-
-This keeps backend substitution honest and makes regressions visible at the contract level instead of only through end-to-end tests.
-
-## Storage And The Core
-
-The deterministic core interacts with abstract storage behavior. Backend registration mechanisms and concrete database integration stay outside the core.
-
-This is what makes storage swappable without rewriting consensus logic.
+The core should only know that storage obeys the contract. Everything else belongs outside it.

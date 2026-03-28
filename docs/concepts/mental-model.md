@@ -5,11 +5,9 @@ sidebar_position: 1
 
 # Mental Model
 
-QuorumKit is a replicated state machine library.
+At its core, QuorumKit is a replicated state machine library.
 
-The library accepts commands, replicates them across a group, commits them in a stable order, and drives a user-supplied state machine with that committed sequence.
-
-## Core Model
+Clients submit commands. One node leads. The command is replicated, committed in a durable order, and eventually applied to a user-defined state machine. If every replica starts from the same state and applies the same committed sequence, they arrive at the same result.
 
 ```mermaid
 flowchart LR
@@ -20,53 +18,24 @@ flowchart LR
     Apply --> State[Replicated Application State]
 ```
 
-The essential guarantee is that replicas that begin from the same state and apply the same committed sequence reach the same resulting state.
+That is the center of the design. Everything else exists to support it.
 
-## Public Faces Of The System
+## The Two Public Faces
 
-The repository exposes two public faces.
+QuorumKit presents two public APIs.
 
-### QuorumKit
+The first is QuorumKit itself: the canonical surface, the one new code should use, and the one the project is trying to make as clear and stable as possible.
 
-QuorumKit is the canonical public model. It uses concept-driven headers and a transport-neutral, storage-neutral architecture.
+The second is the braft compatibility surface. It keeps existing integrations working by translating braft names and calling patterns into the QuorumKit model.
 
-### braft Compatibility
+## The Internal Face
 
-The braft surface preserves source compatibility for existing integrations. It maps braft names and calling patterns into QuorumKit.
-
-## Internal Face Of The System
-
-The internal face contains:
-
-- the core consensus state machine,
-- runtime adapters,
-- transport adapters,
-- storage adapters,
-- snapshot coordination,
-- serialization adapters,
-- deterministic test infrastructure.
-
-This face is not installed as public API.
-
-## Architectural Center
-
-The conceptual center of the repository is not a particular RPC library, filesystem, database, or build tool. The center is the ordered replicated command stream and the contracts around it.
-
-Everything else is an adapter:
-
-- transport adapts message movement,
-- storage adapts persistence,
-- runtime adapts execution,
-- compatibility adapts the braft API vocabulary,
-- build tooling adapts repository consumption.
+Inside the project, there is another layer entirely: the consensus core, runtime adapters, transport adapters, storage adapters, snapshot machinery, serialization, and deterministic test infrastructure. None of that is meant to be part of the installed public contract.
 
 ## Why The Boundaries Matter
 
-These boundaries make it possible to:
+These boundaries are what make the design flexible.
 
-- change transport without rewriting consensus logic,
-- change storage backend without rewriting public APIs,
-- migrate between storage backends without changing the core model,
-- test public APIs without production infrastructure,
-- simulate failures deterministically,
-- reason about the core in a single-threaded model.
+They let the project change transports without rewriting consensus logic, move between storage backends without redesigning the public API, test the public surface without booting a production environment, and keep the core small enough to think about in a mostly single-threaded way.
+
+The easiest way to summarize the model is this: the ordered command stream is the point of the system, and nearly everything around it is an adapter.

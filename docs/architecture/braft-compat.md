@@ -5,15 +5,11 @@ sidebar_position: 4
 
 # braft Compatibility Surface
 
-The `braft` surface is a supported compatibility API that preserves the original braft source-level programming model while delegating to QuorumKit.
+The braft layer is public, supported, and intentionally secondary.
 
-## Purpose
+It exists for a simple reason: real code already depends on braft headers, type names, and calling patterns. QuorumKit keeps that code working, but it does so by treating compatibility as a clearly named layer rather than letting it keep masquerading as the center of the project.
 
-The compatibility layer exists for users who already depend on braft headers, names, and calling patterns. It keeps migration cost low while making the canonical implementation architecture explicit.
-
-The compatibility layer is public, but it is not the conceptual center of the system.
-
-## Public Compatibility Headers
+## What Lives In The Compatibility Surface
 
 ```text
 include/braft/
@@ -28,94 +24,32 @@ include/braft/
   protobuf_file.h
 ```
 
-These headers are supported because existing braft users depend on them. They remain installed and documented.
+These headers remain installed because existing users need them. The important shift is conceptual: they are preserved as compatibility, not as the language new code is expected to grow around.
 
-## Compatibility Contract
+## What Compatibility Means Here
 
-The compatibility layer provides source compatibility, not ABI identity.
+QuorumKit aims for source compatibility, not binary identity. Existing code should still compile against braft names and APIs. That does not mean the project freezes its internal layout or promises that the old object model remains untouched forever.
 
-This means:
-
-- existing code that includes braft headers continues to compile,
-- existing code that calls braft-named APIs continues to build against the compatibility surface,
-- internal object layout and binary compatibility are not the primary contract.
-
-## Layering Model
+## How The Layer Sits In The System
 
 ```mermaid
 flowchart LR
-    Legacy[Legacy User Code] --> B[braft Headers]
+    Legacy[Existing User Code] --> B[braft Headers]
     B --> BC[braft Compatibility Adapters]
     BC --> Q[QuorumKit Public API]
     Q --> I[Internal Implementation]
 ```
 
-The important property is directionality: braft depends on QuorumKit, not the other way around.
+The compatibility layer points inward. It does not own the engine, define the runtime, or become a second place where the real design lives.
 
-## Compatibility Responsibilities
+## What It Preserves
 
-The braft layer preserves:
+It keeps the old names, old namespaces, old route-table style helpers, old administration entry points, and the existing storage construction patterns that matter for compatibility. It also keeps the existing braft storage family in play so old deployments still have a path forward.
 
-- braft header names,
-- braft namespaces,
-- braft type names,
-- braft helper functions,
-- braft admin API names,
-- braft route-table style discovery API names,
-- braft storage construction patterns where required,
-- compatibility with the existing braft storage backend family.
+Some older assumptions stay here on purpose: brpc-oriented service registration, braft-style address parsing, URI conventions inherited from the original system, and protobuf-shaped helper behavior where the old surface exposed them.
 
-The braft layer does not own:
+## What It Should Not Become
 
-- the internal consensus engine,
-- the runtime model,
-- transport adapter implementations,
-- storage backend implementations,
-- new feature design.
+`src/braft_compat` should stay thin. Adapters, conversions, forwarding wrappers, and compatibility tests belong there. Consensus logic, replication mechanics, snapshot coordination, and fresh feature design do not.
 
-## Compatibility Concepts That Stay Isolated
-
-Some concepts belong to the compatibility surface because they carry inherited implementation choices.
-
-Examples include:
-
-- brpc-oriented service registration,
-- endpoint parsing that assumes braft-style address formats,
-- URI conventions that are inherited from the original system,
-- protobuf-shaped CLI and file-service behavior when exposed in the compatibility surface.
-
-These concepts remain available for compatibility, but they do not define the canonical QuorumKit model.
-
-## Compatibility Code Size
-
-The `src/braft_compat` directory stays intentionally thin.
-
-The directory contains:
-
-- type conversions,
-- inline or trivial forwarding wrappers,
-- argument normalization,
-- compatibility-specific documentation,
-- compatibility tests.
-
-If consensus logic, log replication logic, or snapshot coordination logic starts to accumulate in the compatibility layer, the layering boundary has been violated.
-
-## Compatibility Tests
-
-The compatibility surface is validated by dedicated tests under `test/public/braft_compat`.
-
-Those tests verify that:
-
-- the braft names remain available,
-- braft behavior matches QuorumKit behavior where the semantics are shared,
-- braft-only compatibility features remain documented and bounded,
-- compatibility code remains an adapter instead of becoming a second implementation.
-
-## Migration Identity
-
-The repository stays easy to read because the compatibility layer is named exactly for what it is. A reader can immediately distinguish:
-
-- canonical surface: `include/quorumkit`
-- compatibility surface: `include/braft`
-- compatibility implementation: `src/braft_compat`
-- implementation internals: `src/internal`
+If too much real implementation starts piling up in the compatibility layer, the project has recreated the problem it was trying to solve.

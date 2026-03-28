@@ -5,9 +5,11 @@ sidebar_position: 9
 
 # Testing Architecture
 
-QuorumKit is organized so that testing mirrors the architectural boundaries of the code.
+QuorumKit is designed so that its testing story follows the architecture instead of fighting it.
 
-## Test Tree
+That sounds obvious, but many systems end up with the opposite: public APIs that are awkward to test, internals that can only be exercised end to end, and simulation that never really matches production assumptions. This repository is trying to avoid that trap.
+
+## The Test Tree
 
 ```text
 test/
@@ -26,74 +28,23 @@ test/
     workload/
 ```
 
-## Test Layers
+You can read this tree almost as a promise.
 
-### Public QuorumKit Tests
+Public behavior gets tested through public APIs. Internal mechanisms get tested in smaller pieces. Cluster behavior gets tested under a deterministic simulation environment.
 
-`test/public/quorumkit` verifies the canonical API contract.
+## Public API Tests
 
-These tests answer questions such as:
+`test/public/quorumkit` is where the canonical API proves it can stand on its own. If a user can create a node, apply commands, drive discovery, or use the storage interfaces according to the headers, that behavior should be testable here without cheating.
 
-- Can a user construct and drive a node with documented dependencies?
-- Do apply semantics, callback semantics, and error behavior match the public headers?
-- Can the API run with in-memory transport and in-memory storage?
-- Do admin and discovery APIs behave according to contract?
+`test/public/braft_compat` serves a different purpose. It makes sure the compatibility layer stays compatible and stays thin. Old names should still work, but the compatibility layer should not quietly become a second implementation.
 
-### Public braft Compatibility Tests
+## Internal Tests
 
-`test/public/braft_compat` verifies that the compatibility layer preserves the supported braft-compatible behavior.
+`test/internal` is where the smaller moving parts get exercised directly: the deterministic core, runtime mechanics, transport adapters, storage implementations, and snapshot workflows. These tests should be fast, focused, and good at catching regressions before they spread outward.
 
-These tests confirm that:
+## Simulation
 
-- the compatibility headers remain usable,
-- braft helper functions still route into the same behavior,
-- the compatibility layer remains thin and semantically aligned with QuorumKit.
-
-### Internal Subsystem Tests
-
-`test/internal` verifies smaller implementation pieces in isolation.
-
-This includes:
-
-- deterministic core state transitions,
-- storage contract implementations,
-- transport adapters,
-- snapshot coordination,
-- runtime queueing, timing, and cancellation behavior.
-
-### Simulation Tests
-
-`test/simulation` runs multi-node deterministic scenarios against the core and its adapters.
-
-This layer exercises:
-
-- partitions,
-- reordering,
-- loss,
-- delayed delivery,
-- restart and recovery,
-- storage failures,
-- leader transfer,
-- membership changes,
-- witness behavior,
-- lease behavior,
-- workload-driven integration scenarios.
-
-## Testability Design Rules
-
-The public API is designed so tests do not need to bypass encapsulation.
-
-The architecture avoids:
-
-- `private` to `public` preprocessor hacks,
-- direct inclusion of internal headers for public API tests,
-- hard dependency on live network servers for unit tests,
-- hard dependency on production storage for unit tests,
-- hidden global singletons for clocks or randomness.
-
-## Deterministic Execution
-
-Deterministic testing is central to the architecture.
+The simulation layer is where the system gets stressed the way distributed systems actually fail: partitions, loss, delay, restart, storage problems, leadership churn, membership changes, witness behavior, and ugly workloads.
 
 ```mermaid
 flowchart LR
@@ -105,19 +56,14 @@ flowchart LR
     SimStore --> Core
 ```
 
-This model supports a FoundationDB-style surrounding test framework in which the environment is programmable and reproducible.
+This is the beginning of the FoundationDB-style story around QuorumKit: not just unit tests, but a programmable environment where whole clusters can be driven reproducibly.
 
-## Contract Test Matrices
+## What The Design Avoids
 
-Some tests are naturally matrix-based.
+The public API should not require tricks to test. No `private`-to-`public` macros, no dependency on internal headers just to write a basic API test, no requirement that every unit test boot a live network stack, and no hidden global time source shaping behavior behind the scenes.
 
-Examples include:
+Those constraints are useful even outside testing. They keep the design honest.
 
-- the same public API tests against different runtimes,
-- the same storage contract tests against different backends,
-- the same transport tests against different transport adapters,
-- compatibility tests across both QuorumKit and braft surfaces.
+## Why The Test Structure Matters
 
-## Documentation Value
-
-Testing structure also documents the architecture. A reader can infer supported public behavior by reading `test/public`, and implementation refactoring freedom by reading `test/internal` and `test/simulation`.
+The test layout is also a form of documentation. A reader should be able to tell which behavior is part of the public contract, which behavior is an implementation detail, and where the project expects determinism to come from.

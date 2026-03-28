@@ -5,31 +5,9 @@ sidebar_position: 12
 
 # Compatibility And Migration
 
-Compatibility and migration are repository-level concerns, not scattered exceptions.
+Compatibility is only useful if it gives people a path forward.
 
-## Compatibility Scope
-
-The repository preserves compatibility along two dimensions:
-
-- API compatibility through the `braft` surface,
-- storage compatibility through support for existing braft storage backends and storage layout assumptions.
-
-## Migration Scope
-
-The repository treats migration as a supported movement between well-defined surfaces.
-
-This includes:
-
-- migration from braft public APIs to QuorumKit public APIs,
-- migration from braft storage backends to QuorumKit-managed backends,
-- migration between multiple storage backend families,
-- migration of examples, tools, and tests from the compatibility surface to the canonical surface.
-
-## Architectural Rule
-
-Migration paths are explicit and documented. The repository does not rely on users discovering internal layouts and constructing one-off conversion flows on their own.
-
-## Migration Diagram
+In QuorumKit, that path runs along two tracks. One is API compatibility through the braft surface. The other is storage compatibility through support for existing braft storage backends and migration into newer backend arrangements.
 
 ```mermaid
 flowchart LR
@@ -40,15 +18,8 @@ flowchart LR
     CanonicalStorage --> Local[Local Segment Backend]
 ```
 
-## Validation Expectations
+The important part is that migration is treated as a supported part of the design, not as a secret internal ritual. A team should not need to reverse-engineer the repository to move from an old API surface to the new one, or from an inherited storage layout to a new backend.
 
-Migration tooling and migration-aware backend behavior validate:
+In practice, that means migration tools and migration-aware backends need to validate the things that actually matter: index continuity, term continuity, metadata integrity, snapshot boundaries, replay correctness, and readability on the target side.
 
-- index continuity,
-- term continuity,
-- metadata integrity,
-- snapshot boundary correctness,
-- replay correctness,
-- post-migration readability by the target backend.
-
-This makes migration part of the supported system model instead of an operational afterthought.
+If compatibility keeps systems stuck forever, it is not really compatibility. It is dead weight. The goal here is compatibility with motion.

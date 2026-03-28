@@ -5,9 +5,11 @@ sidebar_position: 5
 
 # Internal Architecture
 
-The internal architecture holds the parts of the system that are free to evolve without changing the public contract.
+Everything under `src/internal` exists to support the public surfaces without becoming one.
 
-## Internal Subsystems
+That distinction matters. Once code is clearly internal, the project can split modules, replace implementations, or move pieces around without turning every refactor into a breaking API debate.
+
+## The Main Internal Areas
 
 ```text
 src/internal/
@@ -20,87 +22,25 @@ src/internal/
   base/
 ```
 
-## Subsystem Roles
+The names are plain on purpose. They answer the question “where does this kind of code belong?” without making a reader memorize a private taxonomy first.
 
-### `core`
+## What Lives Where
 
-`core` contains the deterministic state machine of the consensus engine. It is the part of the system that defines the ordering, safety, and transition rules of replication.
+`core/` holds the deterministic heart of the system: elections, replication state, membership transitions, and the sequencing rules that make the replicated state machine behave correctly. This is the part that should remain as small and direct as possible. It should not know about sockets, RPC servers, filesystem APIs, or ad hoc timing tricks.
 
-This subsystem contains:
+`runtime/` is the layer around that core. It provides clocks, timers, schedulers, random sources, and the adapters that connect the single-threaded model of the core to real execution environments. It is where production threading and deterministic simulation meet.
 
-- node state transitions,
-- election logic,
-- replication state updates,
-- membership transition logic,
-- lease and witness state transitions when those are part of the enabled feature set,
-- core command application sequencing.
+`rpc/` owns message transport. That includes transport-neutral interfaces and concrete adapters such as brpc. The important rule is that transport points inward toward the core; the core does not inherit transport assumptions.
 
-The core does not own threads, sockets, RPC servers, filesystem APIs, or external timing sources.
+`storage/` owns persistence contracts and the code that satisfies them. Log storage, metadata storage, snapshots, backend registries, in-memory fakes, and concrete backends all belong here.
 
-### `runtime`
+`snapshot/` handles the workflow around snapshots: producing them, installing them, moving them around, and coordinating with the rest of the system.
 
-`runtime` contains execution adapters around the deterministic core.
+`proto/` is where wire formats live. It is useful to keep serialization logic close together and separate from the public domain model.
 
-This subsystem contains:
+`base/` is the internal toolbox: helpers and small abstractions that are useful inside the implementation but do not belong in installed headers.
 
-- clocks,
-- timers,
-- scheduler interfaces,
-- asynchronous work submission,
-- randomness sources,
-- production thread adapters,
-- deterministic single-threaded runtimes for tests and simulation.
-
-### `rpc`
-
-`rpc` contains transport-neutral messaging contracts and concrete transport adapters.
-
-This subsystem contains:
-
-- message dispatch interfaces,
-- request/response transport abstractions,
-- server registration adapters,
-- brpc-based transport adapters,
-- client-side connection factories,
-- transport-neutral address representation and resolution helpers.
-
-### `storage`
-
-`storage` contains backend-neutral storage contracts plus backend adapters.
-
-This subsystem contains:
-
-- log persistence adapters,
-- metadata persistence adapters,
-- snapshot persistence adapters,
-- backend registries,
-- backend capability checks,
-- in-memory test backends,
-- production backends such as local segment log and external databases.
-
-### `snapshot`
-
-`snapshot` contains snapshot coordination that is separate from the persistent storage contract itself.
-
-This subsystem contains:
-
-- snapshot production orchestration,
-- snapshot installation,
-- snapshot transfer coordination,
-- deduplication and throttling hooks,
-- snapshot import and export flows.
-
-### `proto`
-
-`proto` contains wire-format definitions and translation logic. It does not define the public domain model.
-
-This separation allows the system to keep domain types stable while serialization choices evolve.
-
-### `base`
-
-`base` contains internal helpers, small abstractions, and shared implementation-only utilities. Nothing in this directory appears in installed headers.
-
-## Dependency Discipline
+## Dependency Direction
 
 ```mermaid
 flowchart TD
@@ -115,10 +55,10 @@ flowchart TD
     Rpc --> Base
 ```
 
-The deterministic core depends on abstract services, not concrete adapters. Concrete adapters point inward toward the core.
+The core depends on interfaces. Adapters depend on the core. That direction is what keeps the engine from getting tangled up with whichever transport, clock, or backend happens to be in use today.
 
-## Refactoring Envelope
+## Why This Makes Refactoring Safer
 
-Because internal code is not public by placement, internal subsystem boundaries are allowed to change as long as the public QuorumKit and braft contracts stay stable.
+QuorumKit wants room to change its internals aggressively: a cleaner runtime model, transport swaps, storage migrations, maybe a much smaller provable core over time. That is only realistic if the code that changes most is clearly on the inside.
 
-This is the mechanism that makes aggressive refactoring safe.
+The internal layout is there to create that freedom.

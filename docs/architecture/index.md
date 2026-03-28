@@ -6,15 +6,15 @@ slug: /architecture
 
 # QuorumKit Architecture
 
-QuorumKit is a consensus and replicated state machine library with two public API surfaces and one internal implementation surface.
+QuorumKit has two public APIs and one implementation beneath them.
 
-- `quorumkit` is the canonical public API.
-- `braft` is the compatibility public API.
-- `internal` contains the implementation, runtime adapters, protocol adapters, and test-only infrastructure.
+- `quorumkit` is the API the project is built around.
+- `braft` remains as a compatibility layer.
+- `internal` is where the engine, adapters, and test infrastructure live.
 
-The architecture is organized around one rule: public interfaces are easy to find, easy to document, and easy to test in isolation, while internal code is free to evolve without changing the user-facing contract.
+That sounds simple, but it changes the shape of the repository in an important way. Public code becomes easy to spot. Compatibility becomes explicit. Internal code gets room to change aggressively without dragging users through every refactor.
 
-## Layer Summary
+## The Shape Of The System
 
 ```mermaid
 flowchart TD
@@ -28,9 +28,11 @@ flowchart TD
     I --> D[Deterministic and Integration Tests]
 ```
 
+The key idea is that the public surface stays small while the implementation grows inward, not outward.
+
 ## Repository Contract
 
-The repository presents a strict boundary between public and internal code.
+The directory layout is part of the architecture, not just housekeeping.
 
 ```text
 include/
@@ -52,35 +54,17 @@ cmake/            CMake modules and install/export logic
 packaging/        package-manager integration and distribution metadata
 ```
 
-Only headers under `include/quorumkit` and `include/braft` are installed and documented as supported interfaces. Everything else is implementation detail.
+Only `include/quorumkit` and `include/braft` are installed as supported headers. Everything else is fair game for refactoring.
 
-## Design Principles
+## What This Architecture Optimizes For
 
-### Canonical API First
+The project is trying to make a few things true at the same time.
 
-QuorumKit defines the primary vocabulary of the system. New code, new examples, and new documentation use `quorumkit` names and headers first.
+First, new code should read like QuorumKit, not like a historical fork. Second, compatibility should be honest about what it is: a bridge, not a second center of gravity. Third, the consensus core should stay small enough to reason about clearly, while the surrounding system remains modular enough to swap transports, storage engines, runtimes, and packaging strategies without rewriting the heart of the library.
 
-### Compatibility Is Explicit
+The testing story follows the same logic. Public behavior should be easy to test directly. The core should be able to run under deterministic clocks, transports, and storage fakes. The whole system should be open to simulation rather than only end-to-end smoke tests.
 
-The `braft` surface is a named compatibility layer, not the implementation home of the system. This keeps compatibility visible in the directory tree and keeps the scope of compatibility work bounded.
-
-### Transport Neutrality
-
-The consensus engine does not depend on brpc, protobuf service base classes, IPv4-only endpoint types, or a particular RPC framework. Transport-specific code lives in adapters.
-
-### Storage Neutrality
-
-The core depends on abstract storage contracts, not on a specific log backend, metadata store, or snapshot representation. Backend selection is an adapter concern.
-
-### Deterministic Testability
-
-The architecture separates the core state machine from clocks, randomness, scheduling, threads, transport, and storage side effects. This makes the public API testable and makes the core suitable for deterministic simulation and formal reasoning.
-
-### Headers As Documentation
-
-Public headers are authoritative references. A user can read the header for a type or function and understand purpose, lifecycle, ownership, threading, error behavior, and invariants without needing an external guide.
-
-## Architecture Map
+## Read The Details
 
 - [Repository Layout](./module-layout.md)
 - [Canonical QuorumKit Public API](./public-api.md)
@@ -94,6 +78,4 @@ Public headers are authoritative references. A user can read the header for a ty
 - [Protocols and Features](./protocols-and-features.md)
 - [Compatibility and Migration](./migrations.md)
 
-## System Identity
-
-QuorumKit is a library with a narrow, documented API surface and a broad internal refactoring envelope. That identity is reflected in the source tree, the test tree, the build tree, and the documentation tree.
+If you keep only one idea from this section, it should be this: QuorumKit draws a hard line between what users depend on and what the project is free to change.

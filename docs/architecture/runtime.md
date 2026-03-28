@@ -5,22 +5,11 @@ sidebar_position: 6
 
 # Runtime and Execution Model
 
-QuorumKit separates the deterministic consensus core from the runtime that executes it.
+QuorumKit treats the core of the system as a state machine and the runtime as everything needed to let that state machine live in the world.
 
-## Core Principle
+That split is one of the most important design choices in the repository. It is what makes the core easier to understand, easier to test, and eventually easier to reason about formally.
 
-The core is a state transition system. The runtime supplies time, scheduling, randomness, delivery, and persistence side effects.
-
-This split keeps the core suitable for:
-
-- direct unit testing,
-- deterministic simulation,
-- fault injection,
-- model checking,
-- formal reasoning,
-- production execution on threaded runtimes.
-
-## Runtime Components
+## The Basic Picture
 
 ```mermaid
 flowchart LR
@@ -33,68 +22,28 @@ flowchart LR
     Core --> Store[Storage]
 ```
 
-## Clock
+The core should not decide what time it is, how work gets scheduled, how packets move, or how bytes reach disk. It asks for those services through interfaces.
 
-The runtime exposes time as an injected dependency.
+## Time, Scheduling, And Randomness
 
-The core uses time to evaluate:
+Time drives elections, leases, retries, and test deadlines. Scheduling decides where work runs and in what order callbacks appear. Randomness provides election jitter and any other controlled non-determinism.
 
-- election timeouts,
-- lease validity,
-- retry backoff,
-- snapshot cadence,
-- testing deadlines and determinism hooks.
+Those concerns are deliberately injected rather than pulled from global helpers. That makes behavior reproducible in tests and keeps the core from quietly depending on whatever runtime happens to be linked in.
 
-The clock interface supports both real wall-clock execution and deterministic test clocks.
+## Why The Core Stays Logically Single-Threaded
 
-## Scheduler
+The core is allowed to live inside a concurrent production system, but it should not rely on concurrency for correctness. The clean mental model is an ordered stream of events and state transitions. Threads, queues, timers, and asynchronous dispatch belong outside that model.
 
-The scheduler is responsible for sequencing work that occurs outside the pure state transition itself.
+This pays off in three places at once:
 
-The runtime model defines:
+- unit tests can run with deterministic clocks and schedulers,
+- simulation can replay behavior precisely,
+- the core remains small enough to reason about without juggling races in your head.
 
-- how work is queued,
-- where callbacks run,
-- whether callbacks run inline or asynchronously,
-- whether execution is single-threaded or multi-threaded,
-- whether ordering is deterministic or best-effort production scheduling.
+## Callback Semantics Matter
 
-The public API documents which callbacks are serialized, which are user-owned, and which runtime guarantees hold regardless of scheduler implementation.
+The runtime is also where callback behavior becomes concrete. Users need to know whether callbacks are serialized, whether they may block, whether they can re-enter the API, and what happens during shutdown. Those guarantees belong in the public contract even when the mechanism that enforces them lives in the runtime layer.
 
-## Randomness
+## Adapters, Not Assumptions
 
-Election jitter and any other randomized behavior are not sourced directly from process-global random helpers. The runtime supplies randomness so tests can reproduce behavior exactly.
-
-## Single-Threaded Core
-
-The architecture treats the core as logically single-threaded, even when the production runtime uses concurrency around it.
-
-This means:
-
-- state transitions are expressed as ordered events,
-- the core does not rely on races for correctness,
-- concurrency lives in adapters and queues around the core,
-- deterministic replay remains possible.
-
-## User Callback Semantics
-
-The runtime defines where user callbacks execute, but the public API defines what users can rely on.
-
-That contract covers:
-
-- callback sequencing,
-- shutdown ordering,
-- completion ownership,
-- whether callbacks may block,
-- whether callbacks may re-enter the API.
-
-## Runtime Adapters
-
-The runtime layer contains concrete adapters for:
-
-- production threading and timer facilities,
-- test schedulers,
-- deterministic simulation runtimes,
-- any future single-threaded proof-oriented host environment.
-
-The runtime layer is modular because the consensus model itself does not depend on one execution technology.
+Production threading, deterministic test schedulers, single-threaded simulation loops, and future proof-oriented hosts should all fit under the same broad runtime contract. If a runtime choice changes the meaning of the consensus model, the boundary is in the wrong place.

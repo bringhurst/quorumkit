@@ -5,11 +5,13 @@ sidebar_position: 1
 
 # Public API Overview
 
-QuorumKit exposes two public API surfaces.
+QuorumKit exposes two public faces.
 
-## Canonical Surface
+The first is the one new code should use: `include/quorumkit`. It is the vocabulary the project wants to stand behind long term. The second is `include/braft`, a compatibility surface for code that already speaks in braft terms. Both are public. Only one is canonical.
 
-The canonical surface lives under `include/quorumkit`.
+## The QuorumKit Surface
+
+The QuorumKit headers are organized by concept rather than by implementation history.
 
 ```text
 include/quorumkit/
@@ -24,11 +26,11 @@ include/quorumkit/
     throttle.h
 ```
 
-These headers define the vocabulary of the system.
+Taken together, these headers describe the system the way a user thinks about it: identities, nodes, administration, discovery, persistence, and a small set of optional extensions.
 
-## Compatibility Surface
+## The braft Surface
 
-The compatibility surface lives under `include/braft`.
+The compatibility headers keep the old vocabulary available.
 
 ```text
 include/braft/
@@ -43,9 +45,9 @@ include/braft/
   protobuf_file.h
 ```
 
-These headers preserve source compatibility for existing braft integrations and route users into the QuorumKit implementation stack.
+That surface exists so existing integrations can keep compiling while the repository moves toward a cleaner internal shape.
 
-## Surface Relationship
+## How The Two Surfaces Relate
 
 ```mermaid
 flowchart LR
@@ -53,25 +55,17 @@ flowchart LR
     Q --> I[Internal Implementation]
 ```
 
-The dependency direction is intentional. The canonical API defines the model. The compatibility API adapts to it.
+That direction matters. QuorumKit defines the model. The braft layer adapts to it. The project does not grow a second independent public model just because old names still exist.
 
-## What The Canonical API Avoids
+## What QuorumKit Keeps Out Of The API
 
-The canonical API does not expose:
+The QuorumKit API is deliberately narrower than the implementation beneath it. It does not expose brpc servers, protobuf service base classes, IPv4-only endpoint types, or backend-specific storage objects. Those are adapter concerns. The public API should survive transport changes, storage swaps, and build-system churn without forcing users to rewrite their application code.
 
-- brpc transport objects,
-- protobuf service base classes,
-- IPv4-only endpoint types,
-- storage backend implementation classes,
-- build-tool-specific concepts.
+## How To Use This Section
 
-This keeps the API stable even as transport, storage, runtime, and packaging integrations evolve.
-
-## How To Read The API Docs
-
-Read the canonical surface first. Then read the compatibility surface if you need braft-compatible source-level behavior.
+If you are writing new code, stay on the QuorumKit side and treat the braft pages as a reference for compatibility behavior.
 
 - `docs/architecture/public-api.md`
 - `docs/architecture/braft-compat.md`
 
-The public headers are written as authoritative reference documents. The docs explain how the headers are organized and how the surfaces relate to one another.
+Those pages go deeper on how the public boundary is shaped and what each surface is expected to carry.

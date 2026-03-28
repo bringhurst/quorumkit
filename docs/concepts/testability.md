@@ -5,35 +5,13 @@ sidebar_position: 3
 
 # Design For Testability
 
-Testability is part of the architecture, not a separate cleanup step.
+Testability is one of the design constraints, not something added afterward.
 
-## Testability Rule
+If a public behavior matters, it should be possible to test it through the public API. That sounds obvious, but it rules out a lot of bad habits: private-member visibility hacks, direct dependence on internal headers, hidden global clocks, hidden random sources, and APIs that only make sense when a full production stack is already running.
 
-Any public behavior should be testable through public interfaces.
+## What Needs To Be Injectable
 
-That means public API tests do not depend on:
-
-- private-member visibility hacks,
-- implementation-only headers,
-- global singletons for time or randomness,
-- mandatory live RPC infrastructure,
-- mandatory production storage backends.
-
-## Key Injection Points
-
-The architecture keeps the following concerns injectable:
-
-- clocks,
-- randomness,
-- scheduling,
-- transport,
-- storage,
-- snapshot hooks,
-- telemetry sinks.
-
-This is what makes deterministic public API tests and deterministic simulation possible.
-
-## Test Layers
+The main seams are time, randomness, scheduling, transport, storage, snapshot hooks, and telemetry sinks. Once those are explicit, deterministic tests become much easier to write and much easier to trust.
 
 ```mermaid
 flowchart TD
@@ -42,15 +20,8 @@ flowchart TD
     Internal --> Sim[Deterministic Simulation Tests]
 ```
 
-Each layer answers a different question.
+## Why Determinism Matters
 
-- public tests verify supported behavior,
-- compatibility tests verify braft-compatible behavior,
-- internal tests verify subsystem correctness,
-- simulation tests verify cluster behavior under fault and concurrency conditions.
+The core is meant to behave like an ordered state transition system. Deterministic clocks, transports, and storage backends let that behavior be replayed instead of merely observed. That is the foundation for stronger simulation, better fault injection, and eventually the kind of proof-oriented reasoning the project is aiming toward.
 
-## Determinism
-
-The core is modeled as an ordered state transition system. Deterministic clocks, transports, and storage backends make behavior reproducible across runs.
-
-This is the basis for a FoundationDB-style surrounding test framework and for proof-oriented reasoning about the core.
+The practical payoff is simple: when the system fails in a test, the test should tell you something real instead of just reminding you that timing is hard.

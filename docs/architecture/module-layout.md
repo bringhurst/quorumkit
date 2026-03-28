@@ -5,9 +5,11 @@ sidebar_position: 2
 
 # Repository Layout
 
-The repository layout makes public code, compatibility code, and internal code visually distinct.
+The repository is laid out so that a reader can tell, almost at a glance, what is public and what is not.
 
-## Top-Level Structure
+That is more important than it sounds. One of the easiest ways a systems library becomes hard to evolve is by letting implementation headers masquerade as APIs. QuorumKit tries to make the boundary visible in the tree itself.
+
+## The Shape Of The Tree
 
 ```text
 include/
@@ -40,34 +42,13 @@ packaging/
 docs/
 ```
 
-## Directory Roles
+## The Important Boundaries
 
-### `include/quorumkit`
+`include/quorumkit` is the public API the project is built around. These headers are installed, documented, and tested as contract.
 
-This directory contains the canonical QuorumKit public API. Every header in this directory is:
+`include/braft` is public too, but for a different reason: it preserves compatibility for existing users. It is a supported bridge, not the place where the system should keep growing new ideas.
 
-- installed for consumers,
-- versioned as part of the library contract,
-- documented as supported,
-- tested by public API contract tests.
-
-### `include/braft`
-
-This directory contains the supported compatibility API for braft users. The directory is public, but it is explicitly compatibility-oriented in role. It exists to preserve source compatibility while routing users into QuorumKit internals through a well-defined adapter layer.
-
-### `src/quorumkit`
-
-This directory contains implementation files for the canonical public API. It may contain thin facades, argument normalization, translation into internal types, and stable public-layer helpers. It does not contain the consensus engine itself.
-
-### `src/braft_compat`
-
-This directory contains compatibility-only implementation code. Files in this directory translate braft surface types, names, and invocation patterns into the canonical QuorumKit model.
-
-The directory is intentionally small. If large amounts of logic accumulate here, the compatibility layer is leaking implementation concerns.
-
-### `src/internal`
-
-This directory contains code that is not installed and not documented as public contract. It contains the engine and all implementation-specific adapters.
+`src/quorumkit` holds the code that implements the public QuorumKit layer. `src/braft_compat` is where the compatibility bridge lives. `src/internal` is everything behind that public wall: the engine, adapters, and helpers that users should not need to include directly.
 
 ```text
 src/internal/
@@ -80,7 +61,7 @@ src/internal/
   base/       internal helpers that never appear in public headers
 ```
 
-## Dependency Rules
+## Dependency Direction
 
 ```mermaid
 flowchart LR
@@ -92,48 +73,14 @@ flowchart LR
     I --> I
 ```
 
-The reverse edges are forbidden.
+The arrows only go inward. Internal code does not depend on the compatibility headers. The compatibility layer does not define the model. The QuorumKit surface does not leak internal implementation types.
 
-- `src/internal` does not include from `include/braft`.
-- `include/quorumkit` does not include from `src/internal`.
-- `include/quorumkit` does not mention build-specific or transport-specific implementation types.
-- `include/braft` does not define the system model. It adapts to the model defined by QuorumKit.
+## What Gets Installed
 
-## Installation Rules
+Only `include/quorumkit/**` and `include/braft/**` are installed. Headers under `src/**` do not become public simply because they exist.
 
-Only `include/quorumkit/**` and `include/braft/**` are installed. Headers under `src/**` are never installed.
+That rule keeps the contract honest. A user should not have to guess whether a file like `replicator.h` is safe to depend on. If it sits under `src/internal`, the answer is already no.
 
-This rule matters because the current braft-style layout exposes too many implementation headers to users. The new layout makes the supported contract obvious by inspection.
+## Naming
 
-## Naming Rules
-
-### Public Headers
-
-Public headers use concept-driven names.
-
-- `include/quorumkit/types.h`
-- `include/quorumkit/node.h`
-- `include/quorumkit/admin.h`
-- `include/quorumkit/discovery.h`
-- `include/quorumkit/storage.h`
-- `include/quorumkit/util.h`
-- `include/quorumkit/extensions/filesystem.h`
-- `include/quorumkit/extensions/throttle.h`
-
-Compatibility headers preserve braft names.
-
-- `include/braft/raft.h`
-- `include/braft/configuration.h`
-- `include/braft/cli.h`
-- `include/braft/route_table.h`
-- `include/braft/storage.h`
-
-### Internal Files
-
-Internal files are free to use implementation-oriented names because they are not part of the installed surface.
-
-## Documentation Rules
-
-Each public directory contains a small number of high-value headers. This makes the API easy to browse and keeps the directory tree self-describing.
-
-Public readers do not need to guess whether `node_manager.h`, `replicator.h`, `closure_queue.h`, or `raft_service.h` are safe to depend on. Those files are internal by placement alone.
+QuorumKit headers use concept names because they are supposed to read like a stable interface: `types.h`, `node.h`, `admin.h`, `discovery.h`, `storage.h`. The compatibility layer preserves the older braft names where that matters. Internal code can use whatever implementation-oriented names make sense, because internal code is free to change.
