@@ -5,34 +5,40 @@ sidebar_position: 5
 
 # Troubleshoot common problems
 
-This page collects the common failures that slow down local work.
-
 ## Docs build fails with broken links
-
-Run:
 
 ```sh
 npm run build
 ```
 
-Then read the broken link output carefully. In this docs tree, the usual culprits are:
+Read the error output -- it tells you exactly which file has a bad link and what path it tried to resolve. Common causes:
 
-- moved pages after the Diataxis restructure
-- links that still point at old paths
-- custom slugs such as `/docs/architecture`
+- A page was moved during the Diataxis restructure but a link still points to the old path.
+- A custom slug does not match the file's actual location.
 
 ## `docusaurus: command not found`
 
-Install docs dependencies first:
+The Docusaurus binary comes from the project's npm dependencies. Install them first:
 
 ```sh
 npm ci
 ```
 
-## Example build issues
+## Example does not build
 
-If an example does not build, verify that the main repository build completed first and that you are using the example’s own local CMake flow.
+Build the main library first. The examples link against QuorumKit, so they need the library to exist:
 
-## GitHub Pages confusion
+```sh
+cmake -S . -B bld && cmake --build bld
+```
 
-The production docs site is published under `/docs`, not at the bare site root. The root page redirects to `/docs/`.
+Then build the example using its own CMake:
+
+```sh
+cd example/counter
+cmake . && make
+```
+
+## GitHub Pages shows a 404
+
+The production docs are served at `/docs/`, not at the site root. The root page (`/`) redirects to `/docs/`. If you see a 404 at the root, the redirect page (`src/pages/index.js`) may not have been deployed.

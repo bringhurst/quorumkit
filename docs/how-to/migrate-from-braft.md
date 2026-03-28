@@ -5,27 +5,22 @@ sidebar_position: 4
 
 # Migrate from braft
 
-This page is about the practical side of migration: where to start, what to change first, and what to leave alone until later.
+If you have existing code that uses braft, you do not need to change it all at once. The compatibility headers under `include/braft/` still work -- they call into the QuorumKit implementation underneath.
 
-## Start with the public surface
+## Recommended order
 
-Treat `quorumkit` as the destination API and `braft` as the compatibility bridge.
+1. **Keep running on the braft headers.** Your existing code compiles and works through the compatibility layer. Nothing breaks.
 
-In practice that means:
+2. **Write new code against `include/quorumkit/`.** New modules, new services, new tests -- all of these should use the QuorumKit headers from the start.
 
-- new code should prefer `include/quorumkit`
-- existing code can stay on `include/braft` while the internals move underneath it
-- migration should happen at the edges first: docs, examples, tests, then application code
+3. **Migrate tests and examples.** Move your test code to the QuorumKit API. This is low-risk and gives you early experience with the new surface before touching production paths.
 
-## Storage migration matters too
+4. **Migrate application code.** Replace `#include <braft/...>` with `#include <quorumkit/...>` and update namespaces and type names. The braft compatibility layer can tell you where you still have old references -- if it compiles through `include/braft`, it hasn't been migrated yet.
 
-Migration is not only about headers and namespaces. If you have existing persisted state, plan for storage migration as part of the move. QuorumKit is intended to work with the existing braft storage family while opening a path toward alternate backends.
+5. **Plan storage migration separately.** If you have persisted Raft logs and snapshots on disk, changing the storage backend is a distinct step from changing headers. QuorumKit supports the existing braft storage backends, so you can migrate the API without touching storage. When you are ready to change backends, do it deliberately and with validation. See [Storage layer](../explanation/storage-layer).
 
-## A sane order of operations
+## What the compatibility layer does and does not do
 
-1. keep the existing system running through the compatibility surface
-2. move new code to the QuorumKit headers
-3. move examples and tests to the QuorumKit surface
-4. migrate storage only when you are ready to validate it carefully
+The braft headers are not frozen copies of old code. They are thin adapters that forward to the QuorumKit implementation. They preserve the old names, namespaces, and calling patterns. They do not preserve internal implementation details or undocumented behavior.
 
-For the design rationale behind that, read [Compatibility and migration](../explanation/compatibility-and-migration).
+For the design rationale behind the compatibility boundary, see [Compatibility and migration](../explanation/compatibility-and-migration).

@@ -5,26 +5,14 @@ sidebar_position: 5
 
 # Glossary
 
-## canonical API
+**Canonical API** -- The QuorumKit public headers under `include/quorumkit/`. New code should target this surface.
 
-The QuorumKit public surface under `include/quorumkit`. This is the API new code should target.
+**Compatibility surface** -- The braft public headers under `include/braft/`. They preserve source compatibility for existing integrations and forward into the QuorumKit implementation.
 
-## compatibility surface
+**Deterministic core** -- The Raft state machine at the center of the library. It processes inputs in a fixed order and does not call the clock, the network, or the disk directly. This makes it possible to test under simulated time and simulated faults.
 
-The supported `braft` public surface under `include/braft`. It preserves source compatibility for existing integrations.
+**Runtime adapter** -- Code that supplies the services the core cannot provide for itself: real clocks, thread scheduling, random number generation, and so on.
 
-## deterministic core
+**Transport adapter** -- Code that moves Raft protocol messages between nodes. The core produces and consumes messages; the transport adapter decides whether they travel over brpc, raw TCP, RDMA, or an in-memory channel (for tests).
 
-The part of the system that behaves as an ordered state machine rather than as a bag of concurrent callbacks.
-
-## runtime adapter
-
-Code that supplies time, scheduling, randomness, and execution behavior around the core.
-
-## transport adapter
-
-Code that moves protocol messages without defining the protocol model itself.
-
-## storage backend
-
-A concrete implementation of the log, metadata, or snapshot contracts.
+**Storage backend** -- A concrete implementation of log storage, metadata storage, or snapshot storage. Examples: local segment files, RocksDB, SQLite, in-memory (for tests).

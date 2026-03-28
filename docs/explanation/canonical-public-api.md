@@ -5,27 +5,29 @@ sidebar_position: 3
 
 # Canonical public API
 
-The QuorumKit API lives under `include/quorumkit`. That is the surface new applications should learn, document against, and build on.
+The QuorumKit API lives under `include/quorumkit/`. It is the surface new applications should build against.
 
-The point is straightforward: the API should speak in terms that match the problem, not in terms inherited from old file layouts.
-
-## The Header Set
+## The headers
 
 ```text
 include/quorumkit/
-  types.h
-  node.h
-  admin.h
-  discovery.h
-  storage.h
-  util.h
+  types.h           shared types: PeerId, GroupId, error codes
+  node.h            creating and operating a Raft node
+  admin.h           add/remove peer, transfer leader, reset peers
+  discovery.h       peer discovery and route table
+  storage.h         storage backend contracts
+  util.h            small utilities
   extensions/
-    filesystem.h
-    throttle.h
+    filesystem.h    filesystem snapshot adaptor
+    throttle.h      snapshot throttle
 ```
 
-Each header has a clear job. `types.h` holds the shared nouns of the API. `node.h` is the center of the public surface. `admin.h`, `discovery.h`, and `storage.h` cover the operational side. `util.h` stays small, and `extensions/*` holds optional hooks.
+`node.h` is the center. It defines the node lifecycle: construct a node, configure its peers, start it, apply operations through it, snapshot it, shut it down. The other headers support that lifecycle -- `types.h` gives the shared vocabulary, `admin.h` and `discovery.h` cover cluster management, and `storage.h` defines the contracts that storage backends implement.
 
-## Why the surface looks this way
+## What the API avoids
 
-This API talks about nodes, groups, storage, and administration. It does not drag transport classes, thread-library types, protobuf service bases, or logging frameworks into every signature. A user should be able to understand the model without reverse-engineering brpc, bthread, or a storage plugin.
+The old braft headers pull in brpc types, bthread types, protobuf service bases, and storage implementation details. The QuorumKit headers do not. You can read `node.h` and understand the node model without knowing anything about brpc or bthread.
+
+This is a deliberate choice. Transport, threading, and storage are internal concerns. The public API talks about nodes, peers, groups, and operations -- the concepts you actually think about when you are writing a replicated service.
+
+The `extensions/` directory holds optional pieces (filesystem adaptors, throttle hooks) that not every user needs. They are public but separate, so they do not clutter the core headers.

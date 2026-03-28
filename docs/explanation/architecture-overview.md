@@ -1,51 +1,44 @@
 ---
 title: Architecture overview
 sidebar_position: 1
-slug: /architecture
 ---
 
 # Architecture overview
 
-QuorumKit has two public APIs and one implementation beneath them.
+QuorumKit has two public APIs and a shared implementation underneath.
 
-- `quorumkit` is the API the project is built around.
-- `braft` remains as a compatibility layer.
-- `internal` is where the engine, adapters, and test infrastructure live.
-
-The important part is not the count. It is the boundary. Public code is easy to spot. Compatibility is explicit. Internal code has room to change without turning every refactor into a migration project for users.
-
-## The shape of the system
+`include/quorumkit/` is the primary API. `include/braft/` is a compatibility layer that preserves the old braft names and calling conventions. Both sets of headers are installed with the library, and both call into the same internal code under `src/internal/`.
 
 ```mermaid
 flowchart TD
-    Q[QuorumKit Public API\ninclude/quorumkit] --> I[Internal QuorumKit Implementation\nsrc/internal]
+    Q[QuorumKit Public API\ninclude/quorumkit] --> I[Internal Implementation\nsrc/internal]
     B[braft Compatibility API\ninclude/braft] --> Q
-    I --> R[Runtime Adapters\nthreading, clocks, scheduling]
-    I --> T[Transport Adapters\nbrpc and others]
-    I --> S[Storage Adapters\nlocal, memory, rocksdb, sqlite]
-    Q --> P[Public API Tests]
-    B --> C[Compatibility Tests]
-    I --> D[Deterministic and Integration Tests]
+    I --> R[Runtime Adapters\nclocks, scheduling, threads]
+    I --> T[Transport Adapters\nbrpc, TCP, simulation]
+    I --> S[Storage Backends\nlocal segments, RocksDB, SQLite, in-memory]
+    Q --> PT[Public API Tests\ntest/public/quorumkit]
+    B --> CT[Compatibility Tests\ntest/public/braft_compat]
+    I --> DT[Internal + Simulation Tests\ntest/internal, test/simulation]
 ```
 
-The public surface stays small. The implementation grows inward, not outward.
+The braft headers depend on the QuorumKit headers, never the other way around. Internal code depends on nothing public. This means the internals can change freely -- splitting modules, swapping implementations, reorganizing files -- without breaking either public surface.
 
-## What this architecture optimizes for
+## What sits inside the core
 
-New code should read like QuorumKit, not like a fork that never decided what it wanted to be. The compatibility layer should stay a bridge, not become a second center of gravity. The core should stay small enough to reason about, while the surrounding system stays modular enough to swap transports, storage engines, runtimes, and packaging without rewriting everything.
+The Raft state machine itself lives in `src/internal/core/`. It handles elections, log replication, commitment, and application order. It does not open sockets, read clocks, or write to disk directly. Instead, it talks to adapter interfaces for all of those things, which makes the core testable under simulated time, simulated networks, and simulated storage.
 
-Testing follows the same line of thought. Public behavior should be easy to test directly. The core should run under deterministic clocks, transports, and storage fakes. The system should be open to simulation, not just end-to-end smoke tests.
+The adapters -- runtime, transport, and storage -- live alongside the core in `src/internal/`. Each one is replaceable. The current production transport uses brpc, but the interface is written so you could plug in raw TCP, RDMA, or an in-memory loopback for tests. The same goes for storage: the existing braft backends (local segments, RocksDB) still work, and the interface supports adding new ones.
 
-## Read the rest of the explanation section
+## Where to read more
 
-- [Repository layout](/docs/explanation/repository-layout)
-- [Canonical public API](/docs/explanation/canonical-public-api)
-- [braft compatibility surface](/docs/explanation/braft-compatibility-surface)
-- [Internal architecture](/docs/explanation/internal-architecture)
-- [Runtime and execution model](/docs/explanation/runtime-and-execution-model)
-- [Transport layer](/docs/explanation/transport-layer)
-- [Storage layer](/docs/explanation/storage-layer)
-- [Testing architecture](/docs/explanation/testing-architecture)
-- [Build and packaging modularity](/docs/explanation/build-and-packaging-modularity)
-- [Protocols and features](/docs/explanation/protocols-and-features)
-- [Compatibility and migration](/docs/explanation/compatibility-and-migration)
+- [Repository layout](./repository-layout) -- why the directory tree looks the way it does
+- [Canonical public API](./canonical-public-api) -- what the QuorumKit headers cover
+- [braft compatibility surface](./braft-compatibility-surface) -- what the compatibility layer preserves
+- [Internal architecture](./internal-architecture) -- what lives inside `src/internal/`
+- [Runtime and execution model](./runtime-and-execution-model) -- how the core relates to clocks and threads
+- [Transport layer](./transport-layer) -- how messages move between nodes
+- [Storage layer](./storage-layer) -- how logs, metadata, and snapshots are persisted
+- [Testing architecture](./testing-architecture) -- how the test tree is organized
+- [Build and packaging modularity](./build-and-packaging-modularity) -- how build tooling stays modular
+- [Protocols and features](./protocols-and-features) -- core Raft vs. surrounding features
+- [Compatibility and migration](./compatibility-and-migration) -- the migration path from braft

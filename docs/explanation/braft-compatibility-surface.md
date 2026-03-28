@@ -5,22 +5,26 @@ sidebar_position: 4
 
 # braft compatibility surface
 
-The braft layer is public, supported, and intentionally secondary.
+The headers under `include/braft/` exist so that code already written against braft keeps compiling.
 
-Real code already depends on braft headers, type names, and calling patterns. QuorumKit keeps that code working, but it does so through a clearly named compatibility layer rather than pretending braft is still the center of the project.
-
-## How The Layer Sits In The System
+They are thin adapters. Each braft header includes the corresponding QuorumKit header and maps the old names, namespaces, and calling patterns onto the new API. The implementation underneath is QuorumKit -- the braft layer does not have its own copy of the engine.
 
 ```mermaid
 flowchart LR
-    Legacy[Existing User Code] --> B[braft Headers]
-    B --> BC[braft Compatibility Adapters]
-    BC --> Q[QuorumKit Public API]
-    Q --> I[Internal Implementation]
+    Legacy[Existing user code] --> B[include/braft headers]
+    B --> BC[src/braft_compat adapters]
+    BC --> Q[QuorumKit API + internals]
 ```
 
-The compatibility layer points inward. It does not own the engine, define the runtime, or become a second place where the real design lives.
+## What the compatibility layer preserves
 
-## What It Preserves
+- The braft header names (`raft.h`, `configuration.h`, `cli.h`, etc.)
+- The `braft::` namespace and type names
+- The route-table and admin calling patterns
+- The existing storage construction patterns (so old deployments still work)
 
-It keeps the old names, old namespaces, old route-table style helpers, old administration entry points, and the existing storage construction patterns that matter for compatibility. It also keeps the existing braft storage family in play so old deployments still have a path forward.
+## What it does not preserve
+
+Internal implementation details, undocumented behavior, and direct access to braft internals. If your code was reaching into braft source files rather than public headers, it may need changes.
+
+The compatibility layer is supported and tested, but it is not where the API is growing. New features and new types show up in `include/quorumkit/` first. The braft layer gets whatever it needs to keep existing code working.

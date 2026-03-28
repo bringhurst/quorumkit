@@ -5,32 +5,30 @@ sidebar_position: 2
 
 # Repository layout
 
-The repository is laid out so that you can tell, almost at a glance, what is public and what is not.
+The directory tree is organized so you can tell at a glance whether something is a public contract or an internal detail.
 
-That matters because systems code gets hard to evolve when implementation headers start masquerading as APIs. QuorumKit tries to make that boundary visible in the tree itself.
-
-## The shape of the tree
+## The tree
 
 ```text
 include/
-  quorumkit/
-  braft/
+  quorumkit/        canonical public API
+  braft/            compatibility API
 
 src/
-  quorumkit/
-  braft_compat/
-  internal/
+  quorumkit/        implements the QuorumKit headers
+  braft_compat/     implements the braft headers (calls into QuorumKit)
+  internal/         everything else: core, runtime, transport, storage
 
 test/
   public/
-    quorumkit/
-    braft_compat/
-  internal/
-  simulation/
+    quorumkit/      tests against the QuorumKit API
+    braft_compat/   tests against the braft API
+  internal/         tests for internal modules
+  simulation/       deterministic simulation tests
 
 examples/
-  quorumkit/
-  braft_compat/
+  quorumkit/        examples using the QuorumKit API
+  braft_compat/     examples using the braft API
 
 tools/
   quorumkit/
@@ -42,15 +40,13 @@ packaging/
 docs/
 ```
 
-## The important boundaries
+## Why this split matters
 
-`include/quorumkit` is the public API the project is built around. These headers are installed, documented, and tested as contract.
+When implementation headers get mixed in with public ones, every internal refactor risks breaking users. This layout makes it hard to do that by accident: if a header is in `include/quorumkit/`, it is a public contract; if it is in `src/internal/`, it is free to change.
 
-`include/braft` is public too, but for a different reason: it preserves compatibility for existing users. It is a supported bridge, not the place where the system should keep growing new ideas.
+The braft compatibility headers get their own directory under `include/braft/` rather than being mixed into the QuorumKit tree. That keeps the two surfaces distinct -- you can see exactly which headers exist for compatibility and which ones are the main API.
 
-`src/quorumkit` holds the code that implements the public QuorumKit layer. `src/braft_compat` is where the compatibility bridge lives. `src/internal` is everything behind that public wall: the engine, adapters, and helpers that users should not need to include directly.
-
-## Dependency Direction
+## Dependency direction
 
 ```mermaid
 flowchart LR
@@ -59,7 +55,6 @@ flowchart LR
     SQ --> I[src/internal]
     BC[src/braft_compat] --> Q
     BC --> I
-    I --> I
 ```
 
-The arrows only go inward. Internal code does not depend on compatibility headers. The compatibility layer does not define the model. The QuorumKit surface does not leak internal implementation types.
+Dependencies point inward. The braft headers depend on the QuorumKit headers. The QuorumKit implementation depends on the internals. Internal code never depends on anything public. This means you can restructure `src/internal/` without touching either public surface.

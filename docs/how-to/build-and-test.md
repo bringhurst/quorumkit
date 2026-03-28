@@ -1,49 +1,55 @@
 ---
-title: Build and test QuorumKit
+title: Build and test
 sidebar_position: 1
 ---
 
-# Build and test QuorumKit
+# Build and test
 
-Use this page when you just want the commands.
-
-## Build the project
+## Build the C++ project
 
 ```sh
 cmake -S . -B bld
 cmake --build bld
 ```
 
-## Build with unit tests
+Build artifacts go into `bld/`. Libraries land in `bld/lib` or `bld/src` depending on your CMake generator.
+
+## Build with tests
 
 ```sh
 cmake -S . -B bld -DBUILD_UNIT_TESTS=ON
 cmake --build bld
 ```
 
-The test binaries are produced in the build tree.
+Test binaries are produced inside the build tree. Run them directly or through `ctest`:
 
-## Build the docs
+```sh
+ctest --test-dir bld
+```
 
-The docs site uses Docusaurus.
+## Build the docs site
 
 ```sh
 npm ci
 npm run build
 ```
 
-For local interactive preview:
+The static output goes into `build/`. For a local preview with live reload:
 
 ```sh
 npm run start
 ```
 
-The published docs live under `/docs`, and the site root redirects there.
+The docs are served at `http://localhost:3000/docs/`.
 
-## Common places to look
+## Key paths
 
-- public docs source: `docs/`
-- Docusaurus config: `docusaurus.config.js`
-- docs workflow: `.github/workflows/docs-pages.yml`
-- examples: `example/`
-- tests: `test/`
+| What | Where |
+|---|---|
+| CMake root | `CMakeLists.txt` |
+| CMake modules | `cmake/` |
+| Docusaurus config | `docusaurus.config.js` |
+| Docs source | `docs/` |
+| Examples | `example/` |
+| Tests | `test/` |
+| GitHub Pages workflow | `.github/workflows/docs-pages.yml` |

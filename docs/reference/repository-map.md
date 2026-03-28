@@ -5,27 +5,32 @@ sidebar_position: 3
 
 # Repository map
 
-Use this page when you want the short factual version of the repository layout.
+## Top level
 
 ```text
-docs/         documentation source
-include/      public API headers
-src/          implementation
+include/      public headers (installed with the library)
+src/          implementation source
 test/         tests
 example/      runnable sample applications
-cmake/        canonical build and install logic
+docs/         documentation source (this site)
+cmake/        CMake modules, targets, install logic
 bazel/        Bazel integration
-packaging/    package-manager integration
+packaging/    package-manager metadata
 ```
 
-Inside the code tree:
+## Inside the code
 
 ```text
-include/quorumkit   canonical public API
-include/braft       compatibility API
-src/quorumkit       public-layer implementation
-src/braft_compat    compatibility adapters
-src/internal        internal implementation
+include/quorumkit/   canonical public API
+include/braft/       compatibility API
+
+src/quorumkit/       implementation of the QuorumKit headers
+src/braft_compat/    compatibility adapters for the braft headers
+src/internal/        Raft core, runtime, transport, storage, snapshots
+
+test/public/         tests against the public APIs
+test/internal/       tests for internal modules
+test/simulation/     deterministic simulation tests
 ```
 
-For the reasoning behind that split, read [Repository layout](../explanation/repository-layout).
+For the reasoning behind this split, see [Repository layout](../explanation/repository-layout).

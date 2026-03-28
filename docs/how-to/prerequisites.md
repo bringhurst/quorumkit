@@ -1,31 +1,49 @@
 ---
-title: Check prerequisites
+title: Prerequisites
 sidebar_position: 1
 ---
 
-# Check prerequisites
+# Prerequisites
 
-Before you build QuorumKit, make sure the local machine has the basics in place.
+## C++ toolchain
 
-## Required tools
+You need a C++ compiler that supports C++11 or later. GCC 4.8+ and Clang 3.5+ both work. On macOS, the Xcode command-line tools provide Clang:
 
-- a C++ toolchain supported by the project
-- CMake
-- `make` or another generator supported by your local CMake setup
-- Node.js and npm for the docs site
+```sh
+xcode-select --install
+```
 
-## Repository areas you will likely touch
+On Debian/Ubuntu:
 
-- build files: `CMakeLists.txt`, `cmake/`
-- docs site: `docs/`, `docusaurus.config.js`, `package.json`
-- examples: `example/`
+```sh
+sudo apt install build-essential
+```
 
-## Quick checks
+## CMake
+
+CMake 3.16 or later. Check with:
 
 ```sh
 cmake --version
-npm --version
-node --version
 ```
 
-If those commands work, you are in good shape for the common local build and docs tasks.
+## Node.js (for the docs site only)
+
+The docs site is built with Docusaurus and requires Node.js 18+ and npm:
+
+```sh
+node --version
+npm --version
+```
+
+If you are only building the C++ code and examples, you do not need Node.
+
+## Verify
+
+A quick sanity check that the build tools are in place:
+
+```sh
+cmake --version && c++ --version
+```
+
+If both commands print version info, you are ready to build. Next step: [Build and test](./build-and-test).

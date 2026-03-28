@@ -68,7 +68,7 @@ const config = {
             },
             {
               label: 'Architecture',
-              to: '/docs/architecture'
+              to: '/docs/explanation/architecture-overview'
             }
           ]
         },
