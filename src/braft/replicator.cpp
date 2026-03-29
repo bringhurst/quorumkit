@@ -21,6 +21,8 @@
 #include <butil/time.h>                          // butil::gettimeofday_us
 #include <brpc/controller.h>                     // brpc::Controller
 #include <brpc/reloadable_flags.h>               // BRPC_VALIDATE_GFLAG
+#include <algorithm>                             // std::shuffle
+#include <random>                                // std::mt19937
 #include "braft/replicator.h"
 #include "braft/node.h"                          // NodeImpl
 #include "braft/ballot_box.h"                    // BallotBox 
@@ -1542,7 +1544,9 @@ int ReplicatorGroup::find_the_next_candidate(
             iter = _rmap.begin();  iter != _rmap.end(); ++iter) {
        peers.emplace_back(peerInfo(iter->first,iter->second));
     }
-    std::random_shuffle(peers.begin(), peers.end());
+    // std::random_shuffle was removed in C++17; use std::shuffle instead.
+    static thread_local std::mt19937 rng(std::random_device{}());
+    std::shuffle(peers.begin(), peers.end(), rng);
     for (auto iter = peers.begin();  iter != peers.end(); ++iter) {
         if (!conf.contains(iter->peer_id)) {
             continue;

@@ -1,4 +1,38 @@
 # ---------------------------------------------------------------------------
+# Protobuf code generation
+#
+# Proto generation lives here (not the top-level CMakeLists.txt) because
+# add_custom_command OUTPUT rules are scoped to the directory they're
+# defined in.  If defined in a different directory from add_library, CMake
+# can't find the generated sources at configure time.
+# ---------------------------------------------------------------------------
+set(PROTO_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(PROTO_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+file(MAKE_DIRECTORY ${PROTO_OUT_DIR}/braft)
+
+file(GLOB BRAFT_PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/braft/*.proto")
+
+set(PROTO_SRCS)
+set(PROTO_HDRS)
+foreach(PROTO ${BRAFT_PROTOS})
+    get_filename_component(PROTO_WE ${PROTO} NAME_WE)
+    set(OUT_CC "${PROTO_OUT_DIR}/braft/${PROTO_WE}.pb.cc")
+    set(OUT_H  "${PROTO_OUT_DIR}/braft/${PROTO_WE}.pb.h")
+    list(APPEND PROTO_SRCS ${OUT_CC})
+    list(APPEND PROTO_HDRS ${OUT_H})
+    add_custom_command(
+        OUTPUT ${OUT_CC} ${OUT_H}
+        COMMAND protobuf::protoc
+            --cpp_out=${PROTO_OUT_DIR}
+            --proto_path=${PROTO_SRC_DIR}
+            ${PROTO}
+        DEPENDS ${PROTO}
+        COMMENT "Generating protobuf code for ${PROTO_WE}.proto"
+        VERBATIM
+    )
+endforeach()
+
+# ---------------------------------------------------------------------------
 # braft library target
 # ---------------------------------------------------------------------------
 
@@ -8,8 +42,6 @@ add_library(braft STATIC
     ${BRAFT_SOURCES}
     ${PROTO_SRCS}
 )
-
-add_dependencies(braft braft_proto_gen)
 
 target_include_directories(braft
     PUBLIC
@@ -75,11 +107,24 @@ target_link_libraries(braft
 )
 
 # macOS-specific linker flags
+#
+# -Wl,-U,<symbol> tells the linker to allow <symbol> to be undefined at
+# link time.  These symbols come from optional profiling libraries
+# (gperftools, jemalloc) that brpc's static library references but that
+# we don't link.  At runtime the symbols resolve to NULL or are never
+# called because we compile with NO_TCMALLOC.
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_link_options(braft PUBLIC
+        # gperftools symbols (tcmalloc / cpu profiler)
         "-Wl,-U,_MallocExtension_ReleaseFreeMemory"
         "-Wl,-U,_ProfilerStart"
         "-Wl,-U,_ProfilerStop"
+        # gperftools/libunwind stack trace — brpc's stack_trace_posix.cc
+        # C++ mangled: int GetStackTrace(void**, int, int)
+        "-Wl,-U,__Z13GetStackTracePPvii"
+        # jemalloc profiler symbols — brpc's jemalloc_profiler.cpp
+        "-Wl,-U,_mallctl"
+        "-Wl,-U,_malloc_stats_print"
     )
     target_link_libraries(braft PUBLIC
         "-framework CoreFoundation"
