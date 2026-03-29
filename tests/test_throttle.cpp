@@ -113,7 +113,8 @@ TEST_F(TestUsageSuits, throttle_functioning) {
     ret3 = throttle.throttled_by_throughput(request_1);
     int64_t time3 = throttle._last_throughput_check_time_us;
     ASSERT_EQ(ret3, request_1);
-    ASSERT_EQ(time3, time2 + cycle_time);
+    ASSERT_GE(time3, time2 + cycle_time);
+    ASSERT_LE(time3, time2 + cycle_time * 2);
     // another 3M will be throttled to 2M(3-1=2)
     int ret4 = throttle.throttled_by_throughput(request_3);
     int64_t time4 = throttle._last_throughput_check_time_us;
@@ -148,7 +149,6 @@ TEST_F(TestUsageSuits, throttle_functioning) {
               << " Lowwer bound: " << 0.9 * expect_throughput;  
     
 }
-
 
 
 

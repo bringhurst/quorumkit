@@ -28,6 +28,7 @@ jobs:
             build_type: Release
             cmake_preset: conan-release
             build_examples: 'ON'
+            ctest_label_exclude: known_crash
             conan_compiler: gcc
             conan_compiler_version: '15'
             conan_libcxx: libstdc++11
@@ -43,6 +44,7 @@ jobs:
             build_type: Release
             cmake_preset: conan-release
             build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libstdc++11
@@ -58,6 +60,7 @@ jobs:
             build_type: Release
             cmake_preset: conan-release
             build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libc++
@@ -73,6 +76,7 @@ jobs:
             build_type: Debug
             cmake_preset: conan-debug
             build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash|known_sanitizer_upstream_bug
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libc++
@@ -172,7 +176,7 @@ jobs:
           ASAN_OPTIONS: ${{ matrix.asan_options }}
           UBSAN_OPTIONS: ${{ matrix.ubsan_options }}
           ASAN_SYMBOLIZER_PATH: ${{ matrix.asan_symbolizer_path }}
-        run: ctest --preset ${{ matrix.cmake_preset }} --output-on-failure -LE known_crash
+        run: ctest --preset ${{ matrix.cmake_preset }} --output-on-failure -LE '${{ matrix.ctest_label_exclude }}'
 
   macos-build-and-test:
     name: macos-15
@@ -226,4 +230,4 @@ jobs:
         run: cmake --build --preset conan-release
 
       - name: Test
-        run: ctest --preset conan-release --output-on-failure -LE known_crash
+        run: ctest --preset conan-release --output-on-failure --parallel 1 -LE known_crash

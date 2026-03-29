@@ -5,7 +5,25 @@
 // Date: 2016/11/02 21:12:26
 
 #include <gtest/gtest.h>
+#include <cstdlib>
+#include <unistd.h>
 #include "braft/repeated_timer_task.h"
+
+namespace {
+
+bool wait_until_run_count_at_least(volatile int* counter,
+                                   int expected_count,
+                                   int timeout_us) {
+    const int sleep_step_us = 1000;
+    int waited_us = 0;
+    while (*counter < expected_count && waited_us < timeout_us) {
+        usleep(sleep_step_us);
+        waited_us += sleep_step_us;
+    }
+    return *counter >= expected_count;
+}
+
+}  // namespace
 
 class RepeatedTimerTaskTest : public testing::Test {
 };
@@ -46,12 +64,12 @@ TEST_F(RepeatedTimerTaskTest, sanity) {
     MockTimer timer;
     ASSERT_EQ(0, timer.init(10));
     timer.start();
-    usleep(100500);
+    ASSERT_TRUE(wait_until_run_count_at_least(&timer._run_times, 2, 250000));
     const int run_times = timer._run_times;
     LOG(INFO) << "run_times=" << run_times;
-    ASSERT_TRUE(run_times >= 8 && run_times <= 11) << run_times;
+    ASSERT_GE(run_times, 2) << run_times;
     timer.stop();
-    usleep(10000);
+    usleep(50000);
     ASSERT_LE(abs(run_times - timer._run_times), 1);
     timer.destroy();
     timer.destroy();

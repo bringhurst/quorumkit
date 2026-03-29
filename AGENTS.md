@@ -90,13 +90,15 @@ There are 8 proto files in `src/braft/`. They have no standard protobuf imports 
 
 ### Tests
 
-- **20 passing tests**, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
+- **20 passing tests** in the default GCC/macOS runs, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
 - Tests use `-Dprivate=public -Dprotected=public` to access internals -- ugly but necessary for now.
 - Each test binary gets its own working directory under `testwd/<test_name>/`.
 - Tests sharing the same ports use `RESOURCE_LOCK` properties to avoid conflicts.
 - All tests have a 120-second timeout in normal builds and 300 seconds in sanitizer builds.
 
 The 3 known-crash tests (`test_leader_lease`, `test_cli`, `test_node`) are documented in `UPSTREAM_BUGS.md`. These are real upstream braft memory-corruption bugs during configuration changes / leader failover.
+
+Linux Clang CI also excludes 3 additional upstream crashers (`test_file_service`, `test_snapshot`, `test_snapshot_executor`) via the `known_clang_crash` label. The sanitizer job is narrower still: upstream brpc/butil UBSan violations currently make most of the suite abort, so CI excludes tests labeled `known_sanitizer_upstream_bug` there.
 
 ### Compile definitions
 
@@ -121,7 +123,7 @@ The braft/brpc code requires these compile definitions (set in `src/CMakeLists.t
 
 Two GitHub Actions workflows:
 
-- **`ci.yml`** -- runs a 4-entry Linux matrix on `ubuntu-24.04` (`gcc-15`, `clang-21-libstdcxx`, `clang-21-libcxx`, `clang-21-sanitizers`) plus a `macos-15` arm64 build-and-test job. The sanitizer job uses Conan profile flags for `-fsanitize=address,undefined` and enables brpc's `with_asan` option. Triggered on pushes/PRs to `master` (skips docs-only changes). Uses `workflow_dispatch` for manual runs.
+- **`ci.yml`** -- runs a 4-entry Linux matrix on `ubuntu-24.04` (`gcc-15`, `clang-21-libstdcxx`, `clang-21-libcxx`, `clang-21-sanitizers`) plus a `macos-15` arm64 build-and-test job. The sanitizer job uses Conan profile flags for `-fsanitize=address,undefined` and enables brpc's `with_asan` option. Linux Clang jobs exclude tests labeled `known_clang_crash`, and the sanitizer job also excludes tests labeled `known_sanitizer_upstream_bug` until the upstream brpc/butil UBSan issues are fixed. Triggered on pushes/PRs to `master` (skips docs-only changes). Uses `workflow_dispatch` for manual runs.
 - **`docs-pages.yml`** -- deploys the Docusaurus site to GitHub Pages.
 
 ## Contributor workflow
