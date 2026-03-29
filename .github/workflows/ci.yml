@@ -4,21 +4,11 @@ on:
   push:
     branches: [master]
     paths-ignore:
-      - 'docs/**'
-      - 'static/**'
-      - 'src/css/**'
-      - 'src/pages/**'
-      - 'docusaurus.config.js'
-      - 'sidebars.js'
+      - 'website/**'
       - '*.md'
   pull_request:
     paths-ignore:
-      - 'docs/**'
-      - 'static/**'
-      - 'src/css/**'
-      - 'src/pages/**'
-      - 'docusaurus.config.js'
-      - 'sidebars.js'
+      - 'website/**'
       - '*.md'
   workflow_dispatch:
 
@@ -27,8 +17,80 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  linux-build-and-test:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: gcc-15
+            build_type: Release
+            cmake_preset: conan-release
+            build_examples: 'ON'
+            ctest_label_exclude: known_crash
+            conan_compiler: gcc
+            conan_compiler_version: '15'
+            conan_libcxx: libstdc++11
+            cc: gcc-15
+            cxx: g++-15
+            sanitizer: none
+            sanitizer_build: 'OFF'
+            asan_options: ''
+            ubsan_options: ''
+            asan_symbolizer_path: ''
+
+          - name: clang-21-libstdcxx
+            build_type: Release
+            cmake_preset: conan-release
+            build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash
+            conan_compiler: clang
+            conan_compiler_version: '21'
+            conan_libcxx: libstdc++11
+            cc: clang-21
+            cxx: clang++-21
+            sanitizer: none
+            sanitizer_build: 'OFF'
+            asan_options: ''
+            ubsan_options: ''
+            asan_symbolizer_path: ''
+
+          - name: clang-21-libcxx
+            build_type: Release
+            cmake_preset: conan-release
+            build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash
+            conan_compiler: clang
+            conan_compiler_version: '21'
+            conan_libcxx: libc++
+            cc: clang-21
+            cxx: clang++-21
+            sanitizer: none
+            sanitizer_build: 'OFF'
+            asan_options: ''
+            ubsan_options: ''
+            asan_symbolizer_path: ''
+
+          - name: clang-21-sanitizers
+            build_type: Debug
+            cmake_preset: conan-debug
+            build_examples: 'OFF'
+            ctest_label_exclude: known_crash|known_clang_crash|known_sanitizer_upstream_bug
+            conan_compiler: clang
+            conan_compiler_version: '21'
+            conan_libcxx: libc++
+            cc: clang-21
+            cxx: clang++-21
+            sanitizer: asan-ubsan
+            sanitizer_build: 'ON'
+            asan_options: detect_leaks=1:check_initialization_order=1:strict_string_checks=1:abort_on_error=1:detect_stack_use_after_return=1
+            ubsan_options: print_stacktrace=1:halt_on_error=1
+            asan_symbolizer_path: /usr/lib/llvm-21/bin/llvm-symbolizer
+
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
 
     steps:
       - uses: actions/checkout@v4
@@ -36,32 +98,136 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential
+          sudo apt-get install -y python3-pip software-properties-common wget gpg
+
+          case "${{ matrix.name }}" in
+            gcc-15)
+              sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+              sudo apt-get update
+              sudo apt-get install -y g++-15
+              ;;
+            clang-21-libstdcxx|clang-21-libcxx|clang-21-sanitizers)
+              wget -qO llvm.sh https://apt.llvm.org/llvm.sh
+              chmod +x llvm.sh
+              sudo ./llvm.sh 21
+              if [[ "${{ matrix.name }}" == "clang-21-libcxx" ]]; then
+                sudo apt-get install -y libc++-21-dev libc++abi-21-dev
+              elif [[ "${{ matrix.name }}" == "clang-21-sanitizers" ]]; then
+                sudo apt-get install -y libc++-21-dev libc++abi-21-dev libclang-rt-21-dev
+              fi
+              ;;
+          esac
 
       - name: Install Conan 2
-        run: |
-          pip install conan
-          conan profile detect
+        run: python3 -m pip install conan==2.27.0
 
       - name: Cache Conan packages
         uses: actions/cache@v4
         with:
           path: ~/.conan2
-          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'contrib/brpc/conanfile.py') }}
+          key: conan-${{ runner.os }}-${{ matrix.name }}-${{ hashFiles('conanfile.py', 'contrib/brpc/conanfile.py') }}
           restore-keys: |
+            conan-${{ runner.os }}-${{ matrix.name }}-
             conan-${{ runner.os }}-
+
+      - name: Write Conan profile
+        run: |
+          mkdir -p .ci
+          cat > .ci/conan-linux.profile <<EOF
+          [settings]
+          os=Linux
+          arch=x86_64
+          build_type=${{ matrix.build_type }}
+          compiler=${{ matrix.conan_compiler }}
+          compiler.version=${{ matrix.conan_compiler_version }}
+          compiler.cppstd=gnu17
+          compiler.libcxx=${{ matrix.conan_libcxx }}
+
+          [conf]
+          tools.build:compiler_executables={"c":"${{ matrix.cc }}","cpp":"${{ matrix.cxx }}"}
+          EOF
+
+          if [[ "${{ matrix.sanitizer }}" == "asan-ubsan" ]]; then
+            cat >> .ci/conan-linux.profile <<'EOF'
+          tools.build:cxxflags=["-fsanitize=address,undefined","-fno-sanitize-recover=all","-fno-omit-frame-pointer"]
+          tools.build:cflags=["-fsanitize=address,undefined","-fno-sanitize-recover=all","-fno-omit-frame-pointer"]
+          tools.build:sharedlinkflags=["-fsanitize=address,undefined"]
+          tools.build:exelinkflags=["-fsanitize=address,undefined"]
+
+          [options]
+          brpc/*:with_asan=True
+          EOF
+          fi
 
       - name: Export local brpc recipe
         run: conan export contrib/brpc/
 
       - name: Install dependencies
-        run: conan install . --output-folder=build --build=missing
+        run: conan install . --output-folder=build --build=missing -pr:b .ci/conan-linux.profile -pr:h .ci/conan-linux.profile
 
       - name: Configure
-        run: cmake --preset conan-release -DBUILD_UNIT_TESTS=ON
+        run: cmake --preset ${{ matrix.cmake_preset }} -DBUILD_UNIT_TESTS=ON -DBUILD_EXAMPLES=${{ matrix.build_examples }} -DQUORUMKIT_SANITIZER_BUILD=${{ matrix.sanitizer_build }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.cmake_preset }}
+
+      - name: Test
+        env:
+          ASAN_OPTIONS: ${{ matrix.asan_options }}
+          UBSAN_OPTIONS: ${{ matrix.ubsan_options }}
+          ASAN_SYMBOLIZER_PATH: ${{ matrix.asan_symbolizer_path }}
+        run: ctest --preset ${{ matrix.cmake_preset }} --output-on-failure -LE '${{ matrix.ctest_label_exclude }}'
+
+  macos-build-and-test:
+    name: macos-15
+    runs-on: macos-15
+    env:
+      CC: clang
+      CXX: clang++
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Conan 2
+        run: brew list conan >/dev/null 2>&1 || brew install conan
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-${{ runner.os }}-macos-15-${{ hashFiles('conanfile.py', 'contrib/brpc/conanfile.py') }}
+          restore-keys: |
+            conan-${{ runner.os }}-macos-15-
+            conan-${{ runner.os }}-
+
+      - name: Write Conan profile
+        run: |
+          mkdir -p .ci
+          cat > .ci/conan-macos.profile <<'EOF'
+          [settings]
+          os=Macos
+          arch=armv8
+          build_type=Release
+          compiler=apple-clang
+          compiler.version=17
+          compiler.cppstd=gnu17
+          compiler.libcxx=libc++
+
+          [conf]
+          tools.build:compiler_executables={"c":"clang","cpp":"clang++"}
+          EOF
+
+      - name: Export local brpc recipe
+        run: conan export contrib/brpc/
+
+      - name: Install dependencies
+        run: conan install . --output-folder=build --build=missing -pr:b .ci/conan-macos.profile -pr:h .ci/conan-macos.profile
+
+      - name: Configure
+        run: cmake --preset conan-release -DBUILD_UNIT_TESTS=ON -DBUILD_EXAMPLES=ON
 
       - name: Build
         run: cmake --build --preset conan-release
 
       - name: Test
-        run: ctest --preset conan-release --output-on-failure -LE known_crash
+        run: ctest --preset conan-release --output-on-failure --parallel 1 -LE known_crash

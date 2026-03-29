@@ -69,15 +69,14 @@ target_compile_definitions(braft
 
 if(BUILD_UNIT_TESTS)
     target_compile_definitions(braft PUBLIC UNIT_TEST)
-else()
-    target_compile_definitions(braft PRIVATE NDEBUG)
 endif()
 
 target_compile_options(braft PRIVATE
-    -O2 -pipe -Wall -W -fPIC -fstrict-aliasing
+    -pipe -Wall -W -fPIC -fstrict-aliasing
     -Wno-invalid-offsetof -Wno-unused-parameter
     -Wno-reserved-user-defined-literal
     -fno-omit-frame-pointer
+    $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O2>
 )
 
 # SSE4 only on x86

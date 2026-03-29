@@ -101,7 +101,10 @@ void FileServiceImpl::get_file(::google::protobuf::RpcController* controller,
 }
 
 FileServiceImpl::FileServiceImpl() {
-    _next_id = ((int64_t)getpid() << 45) | (butil::gettimeofday_us() << 17 >> 17);
+    const uint64_t pid_bits = static_cast<uint64_t>(getpid()) << 45;
+    const uint64_t time_bits = static_cast<uint64_t>(butil::gettimeofday_us())
+                               & ((uint64_t(1) << 45) - 1);
+    _next_id = static_cast<int64_t>(pid_bits | time_bits);
 }
 
 int FileServiceImpl::add_reader(FileReader* reader, int64_t* reader_id) {

@@ -1,9 +1,0 @@
-{
-  "label": "Reference",
-  "position": 3,
-  "link": {
-    "type": "generated-index",
-    "title": "Reference",
-    "description": "Reference material for APIs, docs layout, examples, and build setup."
-  }
-}

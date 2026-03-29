@@ -17,27 +17,27 @@ The long-term goal is a single-threaded, provable Raft core with deterministic (
 ```
 quorumkit/
   contrib/                  # Local Conan recipes for deps not on Conan Center
-    brpc/                   # brpc 1.11.0 recipe (see "Dependencies" below)
-  docs/                     # Docusaurus docs site (Diataxis structure)
-    index.md                # Landing page
-    tutorials/              # Step-by-step learning
-    how-to/                 # Task-oriented guides
-    reference/              # API reference, glossary, repo map
-    explanation/            # Architecture and design rationale
+    brpc/                   # brpc 1.16.0 recipe (see "Dependencies" below)
+  website/                  # Docusaurus app (config, theme, content)
+    docs/                   # Doc markdown content (Diataxis structure)
+      index.md              # Landing page
+      tutorials/            # Step-by-step learning
+      how-to/               # Task-oriented guides
+      reference/            # API reference, glossary, repo map
+      explanation/          # Architecture and design rationale
+    src/                    # Docusaurus app source (root redirect, CSS)
+    static/                 # Docusaurus static assets (includes CNAME)
+    docusaurus.config.js    # Docusaurus config
+    sidebars.js             # Sidebar auto-generated from directory structure
+    package.json            # Node deps for Docusaurus
   src/
     braft/                  # Library source (C++ and proto files)
     CMakeLists.txt          # Proto generation + braft library target
-    css/                    # Docusaurus custom styles
-    pages/                  # Docusaurus pages (root redirect)
-  example/                  # Example applications (counter, atomic, block)
-  test/                     # Tests (test_*.cpp)
-  static/                   # Docusaurus static assets (includes CNAME)
+  examples/                 # Example applications (counter, atomic, block)
+  tests/                    # Tests (test_*.cpp)
   .github/workflows/        # GitHub Actions (ci.yml, docs-pages.yml)
   conanfile.py              # Top-level Conan recipe for QuorumKit
   CMakeLists.txt            # Top-level CMake project setup
-  docusaurus.config.js      # Docusaurus config
-  sidebars.js               # Sidebar auto-generated from directory structure
-  package.json              # Node deps for Docusaurus
   UPSTREAM_BUGS.md          # Documented upstream braft bugs
 ```
 
@@ -76,13 +76,13 @@ All dependencies are managed through Conan. Most come from Conan Center:
 | zlib | 1.3.1 | |
 | gtest | 1.14+ | Requires C++14 minimum (the project builds with C++17). |
 
-**brpc 1.11.0** is not on Conan Center. A local recipe lives at `contrib/brpc/conanfile.py`. It downloads brpc source from GitHub, patches out the unused `protoc-gen-mcpack` tool (which has link-order issues on Linux), and builds `libbrpc.a` with all dependency paths pointed at Conan packages. The recipe contains extensive documentation in its docstring and comments explaining each workaround.
+**brpc 1.16.0** is not on Conan Center. A local recipe lives at `contrib/brpc/conanfile.py`. It downloads brpc source from GitHub, patches out the unused `protoc-gen-mcpack` tool (which has link-order issues on Linux), keeps Debug sanitizer builds from being forced back to `-O2 -DNDEBUG`, and builds `libbrpc.a` with all dependency paths pointed at Conan packages. The recipe exposes a `with_asan` option so CI can turn on brpc's ASan fiber annotations. The recipe contains extensive documentation in its docstring and comments explaining each workaround.
 
 Any dependency not in Conan Center should go in `contrib/` as a local Conan recipe (not vendored source).
 
 ### Build scope
 
-The build currently covers the core library and unit tests only. Example applications in `example/` are kept in the repo but excluded from the build graph and CI.
+The default build covers the core library and unit tests. Example applications in `examples/` are built only when `-DBUILD_EXAMPLES=ON`; CI enables that on representative Linux and macOS jobs.
 
 ### Proto files
 
@@ -90,13 +90,15 @@ There are 8 proto files in `src/braft/`. They have no standard protobuf imports 
 
 ### Tests
 
-- **20 passing tests**, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
+- **20 passing tests** in the default GCC/macOS runs, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
 - Tests use `-Dprivate=public -Dprotected=public` to access internals -- ugly but necessary for now.
 - Each test binary gets its own working directory under `testwd/<test_name>/`.
 - Tests sharing the same ports use `RESOURCE_LOCK` properties to avoid conflicts.
-- All tests have a 120-second timeout.
+- All tests have a 120-second timeout in normal builds and 300 seconds in sanitizer builds.
 
 The 3 known-crash tests (`test_leader_lease`, `test_cli`, `test_node`) are documented in `UPSTREAM_BUGS.md`. These are real upstream braft memory-corruption bugs during configuration changes / leader failover.
+
+Linux Clang CI also excludes 3 additional upstream crashers (`test_file_service`, `test_snapshot`, `test_snapshot_executor`) via the `known_clang_crash` label. The sanitizer job is narrower still: upstream brpc/butil UBSan violations currently make almost the entire suite abort, so CI excludes tests labeled `known_sanitizer_upstream_bug` there and keeps only `test_ballot` enabled as a smoke test.
 
 ### Compile definitions
 
@@ -121,14 +123,14 @@ The braft/brpc code requires these compile definitions (set in `src/CMakeLists.t
 
 Two GitHub Actions workflows:
 
-- **`ci.yml`** -- builds the library and runs tests on `ubuntu-24.04`. Triggered on pushes/PRs to `master` (skips docs-only changes). Uses `workflow_dispatch` for manual runs.
+- **`ci.yml`** -- runs a 4-entry Linux matrix on `ubuntu-24.04` (`gcc-15`, `clang-21-libstdcxx`, `clang-21-libcxx`, `clang-21-sanitizers`) plus a `macos-15` arm64 build-and-test job. The sanitizer job uses Conan profile flags for `-fsanitize=address,undefined` and enables brpc's `with_asan` option. Linux Clang jobs exclude tests labeled `known_clang_crash`, and the sanitizer job also excludes tests labeled `known_sanitizer_upstream_bug` until the upstream brpc/butil UBSan issues are fixed. Triggered on pushes/PRs to `master` (skips docs-only changes). Uses `workflow_dispatch` for manual runs.
 - **`docs-pages.yml`** -- deploys the Docusaurus site to GitHub Pages.
 
 ## Contributor workflow
 
 - Do not push directly to `master`. Use feature branches and pull requests.
 - Run `black` on all Python files (Conan recipes, scripts) before committing.
-- Run `npm run build` after editing docs to catch broken links (the build throws on broken links).
+- Run `npm run build` in `website/` after editing docs to catch broken links (the build throws on broken links).
 - Document workarounds in Conan recipes with comments explaining WHY, not just what.
 - Upstream bugs worth reporting (correctness or crashing issues) go in `UPSTREAM_BUGS.md`. Compilation portability nits and test infrastructure issues do not.
 
@@ -140,12 +142,12 @@ Docs use Docusaurus 3.9 and follow the Diataxis framework:
 
 | Category     | Path               | Purpose                              |
 |--------------|--------------------|--------------------------------------|
-| Tutorials    | `docs/tutorials/`  | Learning-oriented walkthroughs       |
-| How-to       | `docs/how-to/`     | Task-oriented guides                 |
-| Reference    | `docs/reference/`  | API overview, glossary, repo map     |
-| Explanation  | `docs/explanation/` | Architecture and design discussion  |
+| Tutorials    | `website/docs/tutorials/`  | Learning-oriented walkthroughs       |
+| How-to       | `website/docs/how-to/`     | Task-oriented guides                 |
+| Reference    | `website/docs/reference/`  | API overview, glossary, repo map     |
+| Explanation  | `website/docs/explanation/` | Architecture and design discussion  |
 
-Sidebar is auto-generated from directory structure (`sidebars.js`). Each category directory has a `_category_.json` for ordering and labels.
+Sidebar is auto-generated from directory structure (`website/sidebars.js`). Each category directory has a `_category_.json` for ordering and labels.
 
 ### Writing style
 
@@ -160,11 +162,12 @@ Sidebar is auto-generated from directory structure (`sidebars.js`). Each categor
 
 - Use **relative links** between docs pages (e.g., `./explanation/architecture-overview`, `../how-to/prerequisites`).
 - Do not use absolute paths like `/docs/explanation/...` in doc markdown.
-- The footer in `docusaurus.config.js` uses absolute paths -- that is the one place where absolute `/docs/...` paths are correct.
+- The footer in `website/docusaurus.config.js` uses absolute paths -- that is the one place where absolute `/docs/...` paths are correct.
 
 ### Building and verifying
 
 ```sh
+cd website
 npm ci                  # Install deps (first time)
 npm run build           # Build site to site-build/ -- this checks all links
 npm start               # Dev server with hot reload
@@ -173,7 +176,7 @@ npm run serve           # Serve the built site locally
 
 ### Deployment
 
-Docs are published to GitHub Pages via `.github/workflows/docs-pages.yml`. The custom domain is `quorumkit.org`. The root `/` redirects to `/docs/` via `src/pages/index.js`. The `static/CNAME` file ensures the custom domain persists across deploys.
+Docs are published to GitHub Pages via `.github/workflows/docs-pages.yml`. The custom domain is `quorumkit.org`. The root `/` redirects to `/docs/` via `website/src/pages/index.js`. The `website/static/CNAME` file ensures the custom domain persists across deploys.
 
 ## License
 
