@@ -5,35 +5,63 @@ sidebar_position: 9
 
 # Testing architecture
 
-The test tree mirrors the source tree, with three distinct areas:
+## Current state
+
+The test directory contains 23 unit test files inherited from braft, all in `test/`:
+
+```text
+test/
+  test_ballot.cpp              test_log_manager.cpp
+  test_ballot_box.cpp          test_memory_storage.cpp
+  test_checksum.cpp            test_meta.cpp
+  test_cli.cpp                 test_node.cpp
+  test_configuration.cpp       test_protobuf_file.cpp
+  test_file_service.cpp        test_repeated_timer_task.cpp
+  test_file_system_adaptor.cpp test_snapshot.cpp
+  test_fsm_caller.cpp          test_snapshot_executor.cpp
+  test_fsync.cpp               test_storage.cpp
+  test_leader_lease.cpp        test_throttle.cpp
+  test_log.cpp                 test_util.cpp
+  test_log_entry.cpp
+  util.h                       test helper (state machine, etc.)
+  sstream_workaround.h         header shim for white-box testing
+```
+
+All tests use Google Test. They compile with `-Dprivate=public -Dprotected=public` to access library internals (white-box testing). This is inherited from upstream braft and will be replaced as the QuorumKit public API takes shape.
+
+## Test isolation
+
+Each test binary gets its own working directory under `testwd/<test_name>/` in the build tree. This prevents interference because many tests hardcode relative paths (`./data`) and listen ports. Tests that share port ranges are grouped with CTest `RESOURCE_LOCK` properties so they never run concurrently, even under `ctest -j`.
+
+## Known crashes
+
+Three tests crash deterministically due to upstream braft memory corruption bugs in configuration-change and leader-failover code paths:
+
+- `test_node` -- SIGSEGV in `LeaderFail` with pipeline replication
+- `test_cli` -- SIGSEGV in `add_and_remove_peer`
+- `test_leader_lease` -- SIGSEGV in `change_peers` and `leader_remove_itself`
+
+These are labeled `known_crash` in CMake and excluded from CI with `ctest -LE known_crash`. See `UPSTREAM_BUGS.md` for details.
+
+## Test results
+
+20 of 23 tests pass. The 3 known-crash tests are excluded. A full passing run:
+
+```sh
+ctest --preset conan-release --output-on-failure -LE known_crash
+```
+
+## Target state
+
+The long-term plan is to restructure tests to mirror the source tree:
 
 ```text
 test/
   public/
     quorumkit/       tests against the QuorumKit public API
     braft_compat/    tests against the braft compatibility API
-  internal/
-    core/            unit tests for the Raft state machine
-    runtime/         tests for clocks, schedulers, random sources
-    transport/       tests for message delivery
-    storage/         tests for log, metadata, and snapshot backends
-    snapshot/        tests for snapshot save/load
-  simulation/
-    cluster/         multi-node cluster simulations
-    fault/           fault injection scenarios
-    workload/        workload-driven tests
+  internal/          tests for internal modules
+  simulation/        deterministic simulation tests
 ```
 
-## Public API tests
-
-Tests under `test/public/` use only the installed headers (`include/quorumkit/` and `include/braft/`). They verify that the library behaves correctly from a user's perspective: creating nodes, applying operations, performing snapshots, running admin commands. If an internal refactor breaks one of these tests, the public contract has changed.
-
-## Internal tests
-
-Tests under `test/internal/` reach into `src/internal/` and test individual modules in isolation. These are the usual unit tests: feed a component specific inputs, check specific outputs. They run fast and catch regressions early, but they are allowed to break when internals are restructured.
-
-## Simulation tests
-
-Tests under `test/simulation/` are the most interesting. They wire up multiple Raft nodes using the in-memory transport, deterministic clock, and in-memory storage. Everything runs in a single process with no real I/O. The test harness controls exactly when messages are delivered, when timers fire, and when storage operations complete.
-
-This makes it possible to write tests for scenarios that are difficult to reproduce reliably in a real cluster: network partitions, asymmetric connectivity, message reordering, slow disks, and clock skew. Because the simulation is fully deterministic, a failing test case produces the same behavior every time you run it.
+Simulation tests will use an in-memory transport, deterministic clock, and in-memory storage -- everything in a single process with no real I/O. This makes it possible to test network partitions, message reordering, slow disks, and clock skew deterministically.

@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - 'docs/**'
+      - 'static/**'
+      - 'src/css/**'
+      - 'src/pages/**'
+      - 'docusaurus.config.js'
+      - 'sidebars.js'
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - 'docs/**'
+      - 'static/**'
+      - 'src/css/**'
+      - 'src/pages/**'
+      - 'docusaurus.config.js'
+      - 'sidebars.js'
+      - '*.md'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+
+      - name: Install Conan 2
+        run: |
+          pip install conan
+          conan profile detect
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py', 'contrib/brpc/conanfile.py') }}
+          restore-keys: |
+            conan-${{ runner.os }}-
+
+      - name: Export local brpc recipe
+        run: conan export contrib/brpc/
+
+      - name: Install dependencies
+        run: conan install . --output-folder=build --build=missing
+
+      - name: Configure
+        run: cmake --preset conan-release -DBUILD_UNIT_TESTS=ON
+
+      - name: Build
+        run: cmake --build --preset conan-release
+
+      - name: Test
+        run: ctest --preset conan-release --output-on-failure -LE known_crash

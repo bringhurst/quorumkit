@@ -7,7 +7,35 @@ sidebar_position: 2
 
 The directory tree is organized so you can tell at a glance whether something is a public contract or an internal detail.
 
-## The tree
+## Current layout
+
+The repository is in transition from the upstream braft structure to the target QuorumKit layout. Today:
+
+```text
+src/
+  braft/              library source, headers, and proto files
+
+test/
+  test_*.cpp          23 unit tests
+  util.h              test helper
+
+example/
+  counter/            replicated counter
+  atomic/             compare-and-swap register
+  block/              block storage service
+
+contrib/
+  brpc/               local Conan recipe (brpc is not on Conan Center)
+
+conanfile.py          Conan 2 project recipe
+CMakeLists.txt        top-level build
+```
+
+Public headers still live alongside implementation in `src/braft/`. There is no separate `include/` directory yet.
+
+## Target layout
+
+The end state separates public contracts from internal details:
 
 ```text
 include/
@@ -25,24 +53,11 @@ test/
     braft_compat/   tests against the braft API
   internal/         tests for internal modules
   simulation/       deterministic simulation tests
-
-examples/
-  quorumkit/        examples using the QuorumKit API
-  braft_compat/     examples using the braft API
-
-tools/
-  quorumkit/
-  braft/
-
-cmake/
-bazel/
-packaging/
-docs/
 ```
 
 ## Why this split matters
 
-When implementation headers get mixed in with public ones, every internal refactor risks breaking users. This layout makes it hard to do that by accident: if a header is in `include/quorumkit/`, it is a public contract; if it is in `src/internal/`, it is free to change.
+When implementation headers get mixed in with public ones, every internal refactor risks breaking users. The target layout makes it hard to do that by accident: if a header is in `include/quorumkit/`, it is a public contract; if it is in `src/internal/`, it is free to change.
 
 The braft compatibility headers get their own directory under `include/braft/` rather than being mixed into the QuorumKit tree. That keeps the two surfaces distinct -- you can see exactly which headers exist for compatibility and which ones are the main API.
 

@@ -16,6 +16,8 @@ The long-term goal is a single-threaded, provable Raft core with deterministic (
 
 ```
 quorumkit/
+  contrib/                  # Local Conan recipes for deps not on Conan Center
+    brpc/                   # brpc 1.11.0 recipe (see "Dependencies" below)
   docs/                     # Docusaurus docs site (Diataxis structure)
     index.md                # Landing page
     tutorials/              # Step-by-step learning
@@ -23,20 +25,20 @@ quorumkit/
     reference/              # API reference, glossary, repo map
     explanation/            # Architecture and design rationale
   src/
-    braft/                  # Current library source (being restructured)
+    braft/                  # Library source (C++ and proto files)
+    CMakeLists.txt          # Proto generation + braft library target
     css/                    # Docusaurus custom styles
     pages/                  # Docusaurus pages (root redirect)
   example/                  # Example applications (counter, atomic, block)
-  test/                     # Tests
-  cmake/                    # CMake modules
-  bazel/                    # Bazel build files (isolated)
-  tools/                    # Build/CI tooling
+  test/                     # Tests (test_*.cpp)
   static/                   # Docusaurus static assets (includes CNAME)
-  .github/workflows/        # GitHub Actions (docs-pages.yml)
+  .github/workflows/        # GitHub Actions (ci.yml, docs-pages.yml)
+  conanfile.py              # Top-level Conan recipe for QuorumKit
+  CMakeLists.txt            # Top-level CMake project setup
   docusaurus.config.js      # Docusaurus config
   sidebars.js               # Sidebar auto-generated from directory structure
   package.json              # Node deps for Docusaurus
-  CMakeLists.txt            # Top-level CMake
+  UPSTREAM_BUGS.md          # Documented upstream braft bugs
 ```
 
 ## Key naming conventions
@@ -44,6 +46,91 @@ quorumkit/
 - The project is called **QuorumKit** everywhere except the compatibility layer.
 - **braft** is used only when referring to the compatibility API surface or the original upstream.
 - Do not rename things to `braft` in new code. New public API goes under `quorumkit`.
+
+## C++ library
+
+### Building
+
+Conan 2 is the package manager. CMake is the build system. The developer workflow:
+
+```sh
+conan export contrib/brpc/                              # Export local brpc recipe
+conan install . --output-folder=build --build=missing   # Install all deps
+cmake --preset conan-release -DBUILD_UNIT_TESTS=ON      # Configure
+cmake --build --preset conan-release                    # Build
+ctest --preset conan-release --output-on-failure -LE known_crash  # Test
+```
+
+Without tests, omit `-DBUILD_UNIT_TESTS=ON` from the configure step.
+
+### Dependencies
+
+All dependencies are managed through Conan. Most come from Conan Center:
+
+| Package | Version | Notes |
+|---------|---------|-------|
+| protobuf | 3.21.12 | Last 3.x release. **Must stay on 3.x** -- `google::protobuf::Closure` was removed in 3.22+. |
+| gflags | 2.2.2 | Conan ships as `libgflags_nothreads.a`, not `libgflags.a`. |
+| leveldb | 1.23 | |
+| openssl | 3.4.1 | |
+| zlib | 1.3.1 | |
+| gtest | 1.14+ | Requires C++14 minimum (the project builds with C++17). |
+
+**brpc 1.11.0** is not on Conan Center. A local recipe lives at `contrib/brpc/conanfile.py`. It downloads brpc source from GitHub, patches out the unused `protoc-gen-mcpack` tool (which has link-order issues on Linux), and builds `libbrpc.a` with all dependency paths pointed at Conan packages. The recipe contains extensive documentation in its docstring and comments explaining each workaround.
+
+Any dependency not in Conan Center should go in `contrib/` as a local Conan recipe (not vendored source).
+
+### Build scope
+
+The build currently covers the core library and unit tests only. Example applications in `example/` are kept in the repo but excluded from the build graph and CI.
+
+### Proto files
+
+There are 8 proto files in `src/braft/`. They have no standard protobuf imports (no `google/protobuf/*`). They only import each other via `braft/` prefix (e.g., `import "braft/enum.proto"`). Proto generation is handled in `src/CMakeLists.txt` (must be in the same directory scope as `add_library`).
+
+### Tests
+
+- **20 passing tests**, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
+- Tests use `-Dprivate=public -Dprotected=public` to access internals -- ugly but necessary for now.
+- Each test binary gets its own working directory under `testwd/<test_name>/`.
+- Tests sharing the same ports use `RESOURCE_LOCK` properties to avoid conflicts.
+- All tests have a 120-second timeout.
+
+The 3 known-crash tests (`test_leader_lease`, `test_cli`, `test_node`) are documented in `UPSTREAM_BUGS.md`. These are real upstream braft memory-corruption bugs during configuration changes / leader failover.
+
+### Compile definitions
+
+The braft/brpc code requires these compile definitions (set in `src/CMakeLists.txt`):
+
+`BRPC_WITH_GLOG=0`, `GFLAGS_NS=gflags`, `BTHREAD_USE_FAST_PTHREAD_MUTEX`, `__const__=__unused__`, `_GNU_SOURCE`, `USE_SYMBOLIZE`, `NO_TCMALLOC`, `__STDC_FORMAT_MACROS`, `__STDC_LIMIT_MACROS`, `__STDC_CONSTANT_MACROS`, `__STRICT_ANSI__`
+
+### macOS-specific notes
+
+- Linker undefined symbols for optional profiling libraries (gperftools, jemalloc) are handled via `-Wl,-U,<symbol>` in `src/CMakeLists.txt`.
+- The brpc Conan recipe includes Homebrew contamination prevention -- see the detailed comments in `contrib/brpc/conanfile.py`.
+- Never install Conan via pip on macOS if Homebrew Conan is present. This corrupts the Homebrew symlink. Use `brew install conan`.
+
+## Design principles
+
+1. **Transport is modular.** The current transport uses brpc, but the interface supports replacement (raw TCP, RDMA, OpenMPI-style, IPv6, simulation loopback).
+2. **Storage is modular.** Existing braft storage backends (local segments, RocksDB) must keep working. The interface supports adding new backends, and migration between backends is part of the design.
+3. **Public API boundaries are explicit.** The directory structure and headers make it clear what is public (`include/quorumkit/`, `include/braft/`) and what is internal (`src/internal/`).
+4. **The braft compatibility layer is bounded.** It wraps the QuorumKit API -- it never adds functionality that QuorumKit does not have.
+
+## CI
+
+Two GitHub Actions workflows:
+
+- **`ci.yml`** -- builds the library and runs tests on `ubuntu-24.04`. Triggered on pushes/PRs to `master` (skips docs-only changes). Uses `workflow_dispatch` for manual runs.
+- **`docs-pages.yml`** -- deploys the Docusaurus site to GitHub Pages.
+
+## Contributor workflow
+
+- Do not push directly to `master`. Use feature branches and pull requests.
+- Run `black` on all Python files (Conan recipes, scripts) before committing.
+- Run `npm run build` after editing docs to catch broken links (the build throws on broken links).
+- Document workarounds in Conan recipes with comments explaining WHY, not just what.
+- Upstream bugs worth reporting (correctness or crashing issues) go in `UPSTREAM_BUGS.md`. Compilation portability nits and test infrastructure issues do not.
 
 ## Docs
 
@@ -84,48 +171,9 @@ npm start               # Dev server with hot reload
 npm run serve           # Serve the built site locally
 ```
 
-The build is configured to **throw on broken links** (`onBrokenLinks: 'throw'`). Always run `npm run build` after editing docs to catch link errors.
-
 ### Deployment
 
 Docs are published to GitHub Pages via `.github/workflows/docs-pages.yml`. The custom domain is `quorumkit.org`. The root `/` redirects to `/docs/` via `src/pages/index.js`. The `static/CNAME` file ensures the custom domain persists across deploys.
-
-## C++ library
-
-### Building
-
-```sh
-cmake -S . -B bld
-cmake --build bld
-```
-
-With tests:
-
-```sh
-cmake -S . -B bld -DBUILD_UNIT_TESTS=ON
-cmake --build bld
-```
-
-### Build system philosophy
-
-- CMake is the primary build system.
-- Bazel support exists but is isolated under `bazel/`.
-- Build and packaging should stay modular -- future Conan/vcpkg support is planned.
-
-## Design principles
-
-1. **Transport is modular.** The current transport uses brpc, but the interface supports replacement (raw TCP, RDMA, OpenMPI-style, IPv6, simulation loopback).
-2. **Storage is modular.** Existing braft storage backends (local segments, RocksDB) must keep working. The interface supports adding new backends, and migration between backends is part of the design.
-3. **Public API boundaries are explicit.** The directory structure and headers make it clear what is public (`include/quorumkit/`, `include/braft/`) and what is internal (`src/internal/`).
-4. **The braft compatibility layer is bounded.** It wraps the QuorumKit API -- it never adds functionality that QuorumKit does not have.
-
-## Branches
-
-- `master` -- do not push directly.
-- `bringhurst/initial-docs` -- docs rewrite (current working branch).
-- `bringhurst/disable-workflows` -- disabled stale CI workflows.
-- `bringhurst/remove-jepsen` -- removed Jepsen test infrastructure.
-- `bringhurst/remove-benchmark` -- removed old benchmark code.
 
 ## License
 

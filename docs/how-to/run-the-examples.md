@@ -7,6 +7,10 @@ sidebar_position: 3
 
 All examples live under `example/`. Each one is a standalone CMake project that links against QuorumKit.
 
+:::note
+The examples are not yet wired into the Conan build system. They still use standalone CMake and link against the library directly. Building the main library first is required. This will be updated once the examples are integrated with Conan.
+:::
+
 ## counter
 
 A replicated integer counter. Three servers agree on a single number; the client increments it.

@@ -8,22 +8,19 @@ sidebar_position: 2
 The top-level directories:
 
 ```text
-include/     public headers (installed with the library)
-src/         implementation
-test/        tests
-example/     runnable sample applications
+src/         library source, headers, and proto files
+test/        unit tests
+example/     runnable sample applications (not part of the build)
+contrib/     local Conan recipes for deps not on Conan Center
 docs/        documentation source (this site)
-cmake/       CMake modules and install logic
-bazel/       Bazel integration
-packaging/   package-manager metadata
 ```
 
 Inside the code:
 
-- `include/quorumkit/` -- the canonical public API. New code should use these headers.
-- `include/braft/` -- the compatibility API. Existing braft code can keep using these.
-- `src/quorumkit/` -- implementation behind the QuorumKit headers.
-- `src/braft_compat/` -- thin adapters that make the braft headers work on top of the QuorumKit internals.
-- `src/internal/` -- everything else: the Raft core, runtime adapters, transport, storage, and snapshot logic.
+- `src/braft/` -- the library source. Headers, implementation files, and 8 protobuf definitions all live here. Public headers are in `src/braft/*.h` (no separate `include/` directory yet).
+- `test/` -- 23 unit test files (`test_*.cpp`), plus helper headers (`util.h`, `sstream_workaround.h`).
+- `example/counter/`, `example/atomic/`, `example/block/` -- standalone demo applications. Not wired into the Conan build yet.
+- `contrib/brpc/` -- local Conan recipe for brpc 1.11.0, which is not available on Conan Center.
+- `conanfile.py` -- the project's Conan recipe, declaring all dependencies.
 
-The split is there so you can tell at a glance whether something is a public contract or an internal detail. For the reasoning behind this layout, see [Repository layout](../explanation/repository-layout).
+For the reasoning behind this layout, see [Repository layout](../explanation/repository-layout).
