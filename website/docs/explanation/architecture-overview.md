@@ -16,9 +16,9 @@ flowchart TD
     I --> R[Runtime Adapters\nclocks, scheduling, threads]
     I --> T[Transport Adapters\nbrpc, TCP, simulation]
     I --> S[Storage Backends\nlocal segments, RocksDB, SQLite, in-memory]
-    Q --> PT[Public API Tests\ntest/public/quorumkit]
-    B --> CT[Compatibility Tests\ntest/public/braft_compat]
-    I --> DT[Internal + Simulation Tests\ntest/internal, test/simulation]
+    Q --> PT[Public API Tests\ntests/public/quorumkit]
+    B --> CT[Compatibility Tests\ntests/public/braft_compat]
+    I --> DT[Internal + Simulation Tests\ntests/internal, tests/simulation]
 ```
 
 The braft headers depend on the QuorumKit headers, never the other way around. Internal code depends on nothing public. This means the internals can change freely -- splitting modules, swapping implementations, reorganizing files -- without breaking either public surface.

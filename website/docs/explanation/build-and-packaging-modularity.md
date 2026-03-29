@@ -12,18 +12,19 @@ conanfile.py          Conan 2 recipe for QuorumKit
 contrib/brpc/         local Conan recipe for brpc (not on Conan Center)
 CMakeLists.txt        top-level CMake project
 src/CMakeLists.txt    library target, protobuf generation
-test/CMakeLists.txt   test targets with isolation and resource locks
+tests/CMakeLists.txt  test targets with isolation and resource locks
+examples/CMakeLists.txt optional example targets (enabled with BUILD_EXAMPLES)
 ```
 
 ## Conan 2 manages dependencies
 
-All C++ dependencies are declared in `conanfile.py` and resolved by Conan 2. The dependency list: protobuf 3.21.12, gflags, leveldb, openssl, zlib, brpc 1.11.0, and gtest (for tests). Conan generates a CMake toolchain and presets, so the build uses `cmake --preset conan-release` instead of manual `-D` flags.
+All C++ dependencies are declared in `conanfile.py` and resolved by Conan 2. The dependency list: protobuf 3.21.12, gflags, leveldb, openssl, zlib, brpc 1.16.0, and gtest (for tests). Conan generates a CMake toolchain and presets, so the build uses `cmake --preset conan-release` instead of manual `-D` flags.
 
 Dependencies not available on Conan Center (currently just brpc) have local recipes under `contrib/`. This keeps the build self-contained without vendoring source trees.
 
 ## CMake is the build system
 
-CMake is the only build system. Protobuf code generation, the static library target, test binaries, and install rules all live in CMakeLists.txt files. The top-level project delegates to `src/` and `test/` subdirectories.
+CMake is the only build system. Protobuf code generation, the static library target, test binaries, optional example binaries, and install rules all live in CMakeLists.txt files. The top-level project delegates to `src/`, `tests/`, and `examples/` subdirectories.
 
 ## Why this matters
 

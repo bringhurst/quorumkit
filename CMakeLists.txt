@@ -6,6 +6,7 @@ project(quorumkit VERSION 0.1.0 LANGUAGES C CXX)
 # and the braft library code compiles cleanly under C++17.
 
 option(BUILD_UNIT_TESTS "Build unit tests" OFF)
+option(BUILD_EXAMPLES "Build example applications" OFF)
 option(QUORUMKIT_SANITIZER_BUILD "Adjust test settings for sanitizer runs" OFF)
 set(QUORUMKIT_TEST_TIMEOUT_SECONDS "120" CACHE STRING "CTest timeout for regular builds")
 set(QUORUMKIT_SANITIZER_TEST_TIMEOUT_SECONDS "300" CACHE STRING "CTest timeout for sanitizer builds")
@@ -53,7 +54,11 @@ endif()
 # ---------------------------------------------------------------------------
 add_subdirectory(src)
 
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
 if(BUILD_UNIT_TESTS)
     enable_testing()
-    add_subdirectory(test)
+    add_subdirectory(tests)
 endif()

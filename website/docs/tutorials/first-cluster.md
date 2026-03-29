@@ -46,34 +46,30 @@ You should see 20 tests pass. The `-LE known_crash` flag skips three tests with 
 
 ## Build the counter example
 
-:::note
-The examples are not yet wired into the Conan build system. They still use standalone CMake and assume the library is already built. This section will be updated once the examples are integrated.
-:::
-
 The `counter` example is a small replicated counter service -- three servers that agree on a single integer.
 
 ```sh
-cd example/counter
-cmake .
-make
+cmake --preset conan-release -DBUILD_EXAMPLES=ON
+cmake --build --preset conan-release
 ```
 
-This produces the server and client binaries in the `example/counter` directory.
+This produces the counter example binaries under `build/build/Release/examples/counter/`.
 
 ## Start the cluster
 
 ```sh
+cd examples/counter
 bash run_server.sh
 ```
 
-This launches three server processes on localhost. Each one writes its Raft log and snapshot data into a subdirectory under `example/counter/`. You will see log output showing leader election: one node wins an election and the other two become followers.
+This launches three server processes on localhost. Each one writes its Raft log and snapshot data into a subdirectory under `examples/counter/`. The script resolves `counter_server` from the CMake build tree, so you do not need to copy binaries around by hand. You will see log output showing leader election: one node wins an election and the other two become followers.
 
 ## Send requests
 
 In a second terminal:
 
 ```sh
-cd example/counter
+cd examples/counter
 bash run_client.sh
 ```
 

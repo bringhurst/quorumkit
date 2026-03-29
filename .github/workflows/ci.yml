@@ -27,6 +27,7 @@ jobs:
           - name: gcc-15
             build_type: Release
             cmake_preset: conan-release
+            build_examples: 'ON'
             conan_compiler: gcc
             conan_compiler_version: '15'
             conan_libcxx: libstdc++11
@@ -41,6 +42,7 @@ jobs:
           - name: clang-21-libstdcxx
             build_type: Release
             cmake_preset: conan-release
+            build_examples: 'OFF'
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libstdc++11
@@ -55,6 +57,7 @@ jobs:
           - name: clang-21-libcxx
             build_type: Release
             cmake_preset: conan-release
+            build_examples: 'OFF'
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libc++
@@ -69,6 +72,7 @@ jobs:
           - name: clang-21-sanitizers
             build_type: Debug
             cmake_preset: conan-debug
+            build_examples: 'OFF'
             conan_compiler: clang
             conan_compiler_version: '21'
             conan_libcxx: libc++
@@ -158,7 +162,7 @@ jobs:
         run: conan install . --output-folder=build --build=missing -pr:b .ci/conan-linux.profile -pr:h .ci/conan-linux.profile
 
       - name: Configure
-        run: cmake --preset ${{ matrix.cmake_preset }} -DBUILD_UNIT_TESTS=ON -DQUORUMKIT_SANITIZER_BUILD=${{ matrix.sanitizer_build }}
+        run: cmake --preset ${{ matrix.cmake_preset }} -DBUILD_UNIT_TESTS=ON -DBUILD_EXAMPLES=${{ matrix.build_examples }} -DQUORUMKIT_SANITIZER_BUILD=${{ matrix.sanitizer_build }}
 
       - name: Build
         run: cmake --build --preset ${{ matrix.cmake_preset }}
@@ -216,7 +220,7 @@ jobs:
         run: conan install . --output-folder=build --build=missing -pr:b .ci/conan-macos.profile -pr:h .ci/conan-macos.profile
 
       - name: Configure
-        run: cmake --preset conan-release -DBUILD_UNIT_TESTS=ON
+        run: cmake --preset conan-release -DBUILD_UNIT_TESTS=ON -DBUILD_EXAMPLES=ON
 
       - name: Build
         run: cmake --build --preset conan-release

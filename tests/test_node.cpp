@@ -16,7 +16,7 @@
 #include <brpc/closure_guard.h>
 #include <bthread/bthread.h>
 #include <bthread/countdown_event.h>
-#include "../test/util.h"
+#include "../tests/util.h"
 
 namespace braft {
 extern bvar::Adder<int64_t> g_num_nodes;

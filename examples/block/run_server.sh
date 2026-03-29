@@ -18,6 +18,7 @@
 mydir="${BASH_SOURCE%/*}"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 . $mydir/../shflags
+. $mydir/../resolve_binary.sh
 
 # define command-line flags
 DEFINE_string crash_on_fatal 'true' 'Crash on fatal log'
@@ -35,6 +36,12 @@ eval set -- "${FLAGS_ARGV}"
 
 # The alias for printing to stderr
 alias error=">&2 echo block: "
+
+SERVER_BIN=$(resolve_example_binary "$mydir" block block_server)
+if [[ -z "$SERVER_BIN" ]]; then
+    error "block_server not found. Build the examples from the repo root with: cmake --preset conan-release -DBUILD_EXAMPLES=ON && cmake --build --preset conan-release"
+    exit 1
+fi
 
 # hostname prefers ipv6
 IP=`hostname -i | awk '{print $NF}'`
@@ -56,7 +63,7 @@ export TCMALLOC_SAMPLE_PARAMETER=524288
 
 for ((i=0; i<$FLAGS_server_num; ++i)); do
     mkdir -p runtime/$i
-    cp ./block_server runtime/$i
+    cp "$SERVER_BIN" runtime/$i/block_server
     cd runtime/$i
     ${VALGRIND} ./block_server \
         -bthread_concurrency=${FLAGS_bthread_concurrency}\

@@ -45,6 +45,15 @@ cmake --preset conan-release -DBUILD_UNIT_TESTS=ON
 cmake --build --preset conan-release
 ```
 
+## Build with examples
+
+```sh
+cmake --preset conan-release -DBUILD_EXAMPLES=ON
+cmake --build --preset conan-release
+```
+
+This adds the example binaries under `build/build/Release/examples/` without changing the default library/test workflow.
+
 ## Run tests
 
 ```sh
@@ -82,7 +91,8 @@ The docs are served at `http://localhost:3000/docs/`.
 | Conan recipe (brpc) | `contrib/brpc/conanfile.py` |
 | CMake root | `CMakeLists.txt` |
 | Library source + protos | `src/braft/` |
-| Tests | `test/` |
+| Examples | `examples/` |
+| Tests | `tests/` |
 | Docusaurus config | `website/docusaurus.config.js` |
 | Docs source | `website/docs/` |
 | CI workflow (C++) | `.github/workflows/ci.yml` |

@@ -535,8 +535,11 @@ message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
 
         QuorumKit keeps brpc's existing Release behavior (still ``-O2``) but
         moves that optimization to the Release / RelWithDebInfo config flags so
-        Debug builds inherit the toolchain defaults.  We also stop brpc's
-        ``DEBUG`` option from overriding CMake's normal ``NDEBUG`` handling.
+        Debug builds inherit the toolchain defaults.  The patch also preserves
+        any toolchain-provided flags already present in ``CMAKE_CXX_FLAGS`` /
+        ``CMAKE_C_FLAGS`` (for example ``-stdlib=libc++`` and sanitizer flags)
+        instead of overwriting them.  We also stop brpc's ``DEBUG`` option from
+        overriding CMake's normal ``NDEBUG`` handling.
         """
         top_level_cmake = os.path.join(self.source_folder, "CMakeLists.txt")
         with open(top_level_cmake) as f:
@@ -550,14 +553,15 @@ message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
             '-fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer")'
         )
         new_flags = (
-            'set(CMAKE_CXX_FLAGS "${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
+            'set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
             "-fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter "
             '-fno-omit-frame-pointer")\n'
-            'set(CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
+            'set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
             '-fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer")\n'
             "# Patched by QuorumKit: keep brpc's historical -O2 optimization\n"
             "# level for release-style builds, but let Debug builds stay\n"
-            "# unoptimized for sanitizer runs.\n"
+            "# unoptimized for sanitizer runs. Preserve toolchain flags such\n"
+            "# as -stdlib=libc++ instead of overwriting them.\n"
             'set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")\n'
             'set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")\n'
             'set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2")\n'

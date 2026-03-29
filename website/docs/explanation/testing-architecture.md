@@ -7,10 +7,10 @@ sidebar_position: 9
 
 ## Current state
 
-The test directory contains 23 unit test files inherited from braft, all in `test/`:
+The test directory contains 23 unit test files inherited from braft, all in `tests/`:
 
 ```text
-test/
+tests/
   test_ballot.cpp              test_log_manager.cpp
   test_ballot_box.cpp          test_memory_storage.cpp
   test_checksum.cpp            test_meta.cpp
@@ -56,7 +56,7 @@ ctest --preset conan-release --output-on-failure -LE known_crash
 The long-term plan is to restructure tests to mirror the source tree:
 
 ```text
-test/
+tests/
   public/
     quorumkit/       tests against the QuorumKit public API
     braft_compat/    tests against the braft compatibility API

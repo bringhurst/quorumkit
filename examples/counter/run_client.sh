@@ -18,6 +18,7 @@
 mydir="${BASH_SOURCE%/*}"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 . $mydir/../shflags
+. $mydir/../resolve_binary.sh
 
 
 # define command-line flags
@@ -41,6 +42,12 @@ if [ "$FLAGS_valgrind" == "true" ] && [ $(which valgrind) ] ; then
     VALGRIND="valgrind --tool=memcheck --leak-check=full"
 fi
 
+CLIENT_BIN=$(resolve_example_binary "$mydir" counter counter_client)
+if [[ -z "$CLIENT_BIN" ]]; then
+    echo "counter: counter_client not found. Build the examples from the repo root with: cmake --preset conan-release -DBUILD_EXAMPLES=ON && cmake --build --preset conan-release" >&2
+    exit 1
+fi
+
 raft_peers=""
 for ((i=0; i<$FLAGS_server_num; ++i)); do
     raft_peers="${raft_peers}${IP}:$((${FLAGS_server_port}+i)):0,"
@@ -48,7 +55,7 @@ done
 
 export TCMALLOC_SAMPLE_PARAMETER=524288
 
-${VALGRIND} ./counter_client \
+${VALGRIND} "$CLIENT_BIN" \
         --add_percentage=${FLAGS_add_percentage} \
         --bthread_concurrency=${FLAGS_bthread_concurrency} \
         --conf="${raft_peers}" \
@@ -56,4 +63,3 @@ ${VALGRIND} ./counter_client \
         --log_each_request=${FLAGS_log_each_request} \
         --thread_num=${FLAGS_thread_num} \
         --use_bthread=${FLAGS_use_bthread} \
-

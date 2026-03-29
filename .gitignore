@@ -13,7 +13,8 @@
 # Runtime and build directories
 /runtime/
 /output/
-/test/output/
+/tests/output/
+/examples/*/runtime/
 /build/
 /site-build/
 /node_modules/

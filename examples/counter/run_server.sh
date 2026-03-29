@@ -18,6 +18,7 @@
 mydir="${BASH_SOURCE%/*}"
 if [[ ! -d "$mydir" ]]; then mydir="$PWD"; fi
 . $mydir/../shflags
+. $mydir/../resolve_binary.sh
 
 # define command-line flags
 DEFINE_string crash_on_fatal 'true' 'Crash on fatal log'
@@ -27,14 +28,20 @@ DEFINE_string valgrind 'false' 'Run in valgrind'
 DEFINE_integer max_segment_size '8388608' 'Max segment size'
 DEFINE_integer server_num '3' 'Number of servers'
 DEFINE_boolean clean 1 'Remove old "runtime" dir before running'
-DEFINE_integer port 8300 "Port of the first server"
+DEFINE_integer port 8100 "Port of the first server"
 
 # parse the command-line
 FLAGS "$@" || exit 1
 eval set -- "${FLAGS_ARGV}"
 
 # The alias for printing to stderr
-alias error=">&2 echo atomic: "
+alias error=">&2 echo counter: "
+
+SERVER_BIN=$(resolve_example_binary "$mydir" counter counter_server)
+if [[ -z "$SERVER_BIN" ]]; then
+    error "counter_server not found. Build the examples from the repo root with: cmake --preset conan-release -DBUILD_EXAMPLES=ON && cmake --build --preset conan-release"
+    exit 1
+fi
 
 # hostname prefers ipv6
 IP=`hostname -i | awk '{print $NF}'`
@@ -56,9 +63,9 @@ export TCMALLOC_SAMPLE_PARAMETER=524288
 
 for ((i=0; i<$FLAGS_server_num; ++i)); do
     mkdir -p runtime/$i
-    cp ./atomic_server runtime/$i
+    cp "$SERVER_BIN" runtime/$i/counter_server
     cd runtime/$i
-    ${VALGRIND} ./atomic_server \
+    ${VALGRIND} ./counter_server \
         -bthread_concurrency=${FLAGS_bthread_concurrency}\
         -crash_on_fatal_log=${FLAGS_crash_on_fatal} \
         -raft_max_segment_size=${FLAGS_max_segment_size} \

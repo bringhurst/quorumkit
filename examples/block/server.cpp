@@ -18,6 +18,7 @@
 #include <butil/sys_byteorder.h>        // butil::NetToHost32
 #include <brpc/controller.h>            // brpc::Controller
 #include <brpc/server.h>                // brpc::Server
+#include <braft/fsync.h>                // braft::raft_fsync
 #include <braft/raft.h>                 // braft::Node braft::StateMachine
 #include <braft/storage.h>              // braft::SnapshotWriter
 #include <braft/util.h>                 // braft::AsyncClosureGuard
@@ -335,7 +336,7 @@ friend class BlockClosure;
         // Sync buffered data before
         int rc = 0;
         LOG(INFO) << "Saving snapshot to " << snapshot_path;
-        for (; (rc = ::fdatasync(sa->fd->fd())) < 0 && errno == EINTR;) {}
+        for (; (rc = braft::raft_fsync(sa->fd->fd())) < 0 && errno == EINTR;) {}
         if (rc < 0) {
             sa->done->status().set_error(EIO, "Fail to sync fd=%d : %m",
                                          sa->fd->fd());

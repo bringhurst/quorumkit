@@ -33,8 +33,8 @@ quorumkit/
   src/
     braft/                  # Library source (C++ and proto files)
     CMakeLists.txt          # Proto generation + braft library target
-  example/                  # Example applications (counter, atomic, block)
-  test/                     # Tests (test_*.cpp)
+  examples/                 # Example applications (counter, atomic, block)
+  tests/                    # Tests (test_*.cpp)
   .github/workflows/        # GitHub Actions (ci.yml, docs-pages.yml)
   conanfile.py              # Top-level Conan recipe for QuorumKit
   CMakeLists.txt            # Top-level CMake project setup
@@ -82,7 +82,7 @@ Any dependency not in Conan Center should go in `contrib/` as a local Conan reci
 
 ### Build scope
 
-The build currently covers the core library and unit tests only. Example applications in `example/` are kept in the repo but excluded from the build graph and CI.
+The default build covers the core library and unit tests. Example applications in `examples/` are built only when `-DBUILD_EXAMPLES=ON`; CI enables that on representative Linux and macOS jobs.
 
 ### Proto files
 

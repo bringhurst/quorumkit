@@ -21,12 +21,12 @@ during configuration transitions.
 ```sh
 # Build, then run in a clean temp directory:
 mkdir /tmp/braft_repro && cd /tmp/braft_repro
-/path/to/build/test/test_leader_lease --gtest_filter='BaseLeaseTest.change_peers'
+/path/to/build/tests/test_leader_lease --gtest_filter='BaseLeaseTest.change_peers'
 # → SIGSEGV every time
 ```
 
 **Environment:** apple-clang 17, arm64 macOS, C++17, protobuf 3.21.12,
-brpc 1.11.0, gtest 1.14.  Reproduced in both Release and Debug builds.
+brpc 1.16.0, gtest 1.14.  Reproduced in both Release and Debug builds.
 
 **Analysis:** The crash happens during `change_peers` operations that
 add nodes to a Raft group one at a time.  The replicator for a newly
@@ -37,6 +37,6 @@ appears across three independent test binaries that all exercise
 membership changes.
 
 **Workaround:** The 3 affected test binaries are labeled `known_crash`
-in `test/CMakeLists.txt` and excluded from CI via `ctest -LE known_crash`.
+in `tests/CMakeLists.txt` and excluded from CI via `ctest -LE known_crash`.
 The 20 remaining tests (including `test_snapshot_executor`, which passes
 with clean working directories) all pass.

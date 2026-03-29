@@ -15,11 +15,11 @@ The repository is in transition from the upstream braft structure to the target 
 src/
   braft/              library source, headers, and proto files
 
-test/
+tests/
   test_*.cpp          23 unit tests
   util.h              test helper
 
-example/
+examples/
   counter/            replicated counter
   atomic/             compare-and-swap register
   block/              block storage service
@@ -47,7 +47,7 @@ src/
   braft_compat/     implements the braft headers (calls into QuorumKit)
   internal/         everything else: core, runtime, transport, storage
 
-test/
+tests/
   public/
     quorumkit/      tests against the QuorumKit API
     braft_compat/   tests against the braft API

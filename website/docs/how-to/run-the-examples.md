@@ -5,19 +5,25 @@ sidebar_position: 3
 
 # Run the examples
 
-All examples live under `example/`. Each one is a standalone CMake project that links against QuorumKit.
+All examples live under `examples/`. They build through the main QuorumKit CMake project, so they reuse the same Conan-managed dependencies and the same `braft` target as the library.
 
-:::note
-The examples are not yet wired into the Conan build system. They still use standalone CMake and link against the library directly. Building the main library first is required. This will be updated once the examples are integrated with Conan.
-:::
+Before running any example, build the repo from the root with examples enabled:
+
+```sh
+conan export contrib/brpc/
+conan install . --output-folder=build --build=missing
+cmake --preset conan-release -DBUILD_EXAMPLES=ON
+cmake --build --preset conan-release
+```
+
+The run scripts look for binaries in the source directory first, then in `build/build/Release/examples/` and `build/build/Debug/examples/`.
 
 ## counter
 
 A replicated integer counter. Three servers agree on a single number; the client increments it.
 
 ```sh
-cd example/counter
-cmake . && make
+cd examples/counter
 bash run_server.sh     # starts three local nodes
 bash run_client.sh     # sends increment requests
 ```
@@ -29,8 +35,7 @@ The client prints the counter value after each successful request. Server logs s
 A replicated compare-and-swap register. Same cluster setup, but the state machine supports atomic read-modify-write operations instead of a plain counter.
 
 ```sh
-cd example/atomic
-cmake . && make
+cd examples/atomic
 bash run_server.sh
 bash run_client.sh
 ```
@@ -40,8 +45,7 @@ bash run_client.sh
 A block-oriented storage service with heavier I/O. The state machine reads and writes fixed-size blocks, so it exercises the snapshot and log paths more aggressively than the other two examples.
 
 ```sh
-cd example/block
-cmake . && make
+cd examples/block
 bash run_server.sh
 bash run_client.sh
 ```

@@ -56,7 +56,7 @@ See `UPSTREAM_BUGS.md` for details.
 Some tests write to relative `./data` directories and use hardcoded ports. If a previous test run crashed and left state behind, later tests can fail with rename errors or port conflicts. The build system isolates each test into its own working directory under `testwd/`, but if you see flaky failures:
 
 ```sh
-rm -rf build/build/Release/test/testwd/
+rm -rf build/build/Release/tests/testwd/
 cmake --build --preset conan-release
 ctest --preset conan-release --output-on-failure -LE known_crash
 ```
