@@ -17,7 +17,7 @@ class QuorumKitConan(ConanFile):
         self.requires("leveldb/1.23")
         self.requires("openssl/3.4.1")
         self.requires("zlib/1.3.1")
-        self.requires("brpc/1.11.0")
+        self.requires("brpc/1.16.0")
 
     def build_requirements(self):
         self.tool_requires("protobuf/3.21.12")

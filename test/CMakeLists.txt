@@ -27,10 +27,11 @@ foreach(TEST_SRC ${TEST_SRCS})
         -Dprivate=public
         -Dprotected=public
         -include sstream_workaround.h
-        -O2 -pipe -Wall -W -fPIC -fstrict-aliasing
+        -pipe -Wall -W -fPIC -fstrict-aliasing
         -Wno-invalid-offsetof -Wno-unused-parameter
         -Wno-unused-result
         -fno-omit-frame-pointer
+        $<$<OR:$<CONFIG:Release>,$<CONFIG:RelWithDebInfo>>:-O2>
     )
 
     # macOS: weak symbol references used in bthread logging
@@ -53,7 +54,7 @@ foreach(TEST_SRC ${TEST_SRCS})
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
     set_tests_properties(${TEST_NAME} PROPERTIES
         WORKING_DIRECTORY "${TEST_WORKDIR}"
-        TIMEOUT 120
+        TIMEOUT ${QUORUMKIT_EFFECTIVE_TEST_TIMEOUT_SECONDS}
     )
 endforeach()
 

@@ -1,17 +1,22 @@
-"""Conan recipe for Apache brpc 1.11.0 (local, not on Conan Center).
+"""Conan recipe for Apache brpc 1.16.0 (local, not on Conan Center).
 
 brpc is not published on Conan Center Index, so we maintain this local recipe.
-It downloads brpc 1.11.0 source from GitHub and builds it with CMake, pointing
+It downloads brpc 1.16.0 source from GitHub and builds it with CMake, pointing
 all dependency paths at Conan packages to avoid picking up Homebrew or system
 libraries.
 
-Why brpc 1.11.0
+Why brpc 1.16.0
 ---------------
-brpc 1.11.0 is the latest release that works with protobuf 3.x (the 3.21.12
-series).  Newer protobuf versions (4.x+, rebranded as "protobuf" from
-"google-protobuf") require abseil and C++17.  braft — and by extension
-QuorumKit — uses ``google::protobuf::Closure``, which was removed in protobuf
-3.22+.  Staying on 3.21.12 is mandatory until those call sites are migrated.
+QuorumKit stays on the latest brpc release so we get upstream fixes, including
+the bthread AddressSanitizer fiber-switch annotations added in brpc 1.13.0 and
+the follow-up sanitizer fixes that landed after that.
+
+This does NOT force us onto protobuf 4.x/5.x.  QuorumKit still pins protobuf to
+3.21.12 because braft — and by extension QuorumKit — uses
+``google::protobuf::Closure``, which was removed in protobuf 3.22+.  brpc only
+switches to its abseil/C++17 protobuf path when ``Protobuf_VERSION`` is greater
+than 4.21.  Our Conan shims report 3.21.12 explicitly, so brpc stays on the
+protobuf-3.x path.
 
 Why no CMakeDeps
 ----------------
@@ -73,7 +78,7 @@ from conan.tools.files import get, save
 
 class BrpcConan(ConanFile):
     name = "brpc"
-    version = "1.11.0"
+    version = "1.16.0"
     license = "Apache-2.0"
     url = "https://github.com/apache/brpc"
     description = "Apache brpc - an industrial-grade RPC framework"
@@ -81,10 +86,12 @@ class BrpcConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
+        "with_asan": [True, False],
     }
     default_options = {
         "shared": False,
         "fPIC": True,
+        "with_asan": False,
     }
 
     def requirements(self):
@@ -116,7 +123,7 @@ class BrpcConan(ConanFile):
     def source(self):
         get(
             self,
-            "https://github.com/apache/brpc/archive/refs/tags/1.11.0.tar.gz",
+            "https://github.com/apache/brpc/archive/refs/tags/1.16.0.tar.gz",
             strip_root=True,
         )
         self._write_find_protobuf_shim()
@@ -285,6 +292,11 @@ message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
         tc.variables["BUILD_BRPC_TOOLS"] = "OFF"  # Skip rpc_press / rpc_replay
         tc.variables["BUILD_SHARED_LIBS"] = "ON" if self.options.shared else "OFF"
         tc.variables["DOWNLOAD_GTEST"] = "OFF"  # Tests are off anyway
+        # WITH_ASAN makes brpc add -fsanitize=address and, more importantly,
+        # compiles in the bthread fiber-switch annotations used by ASan.
+        # The consumer's Conan profile still supplies the full sanitizer flag
+        # set so every dependency is built consistently.
+        tc.variables["WITH_ASAN"] = "ON" if self.options.with_asan else "OFF"
 
         # brpc's cmake_minimum_required(VERSION 2.8.12) predates CMake 3.5.
         # CMake 3.27+ warns/errors on old minimum versions unless this is set.
@@ -513,7 +525,74 @@ message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
         with open(src_cmake, "w") as f:
             f.writelines(patched_lines)
 
+    def _patch_build_type_flags(self):
+        """Let CMake build types control optimization and NDEBUG.
+
+        Upstream brpc hardcodes ``-O2`` into the global C and C++ flags and
+        appends ``-DNDEBUG`` whenever its separate ``DEBUG`` option is OFF.
+        That forces optimized, non-debug builds even when Conan requests
+        ``build_type=Debug`` for sanitizer jobs.
+
+        QuorumKit keeps brpc's existing Release behavior (still ``-O2``) but
+        moves that optimization to the Release / RelWithDebInfo config flags so
+        Debug builds inherit the toolchain defaults.  We also stop brpc's
+        ``DEBUG`` option from overriding CMake's normal ``NDEBUG`` handling.
+        """
+        top_level_cmake = os.path.join(self.source_folder, "CMakeLists.txt")
+        with open(top_level_cmake) as f:
+            top_level = f.read()
+
+        old_flags = (
+            'set(CMAKE_CXX_FLAGS "${CMAKE_CPP_FLAGS} -O2 -pipe -Wall -W -fPIC '
+            "-fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter "
+            '-fno-omit-frame-pointer")\n'
+            'set(CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -O2 -pipe -Wall -W -fPIC '
+            '-fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer")'
+        )
+        new_flags = (
+            'set(CMAKE_CXX_FLAGS "${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
+            "-fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter "
+            '-fno-omit-frame-pointer")\n'
+            'set(CMAKE_C_FLAGS "${CMAKE_CPP_FLAGS} -pipe -Wall -W -fPIC '
+            '-fstrict-aliasing -Wno-unused-parameter -fno-omit-frame-pointer")\n'
+            "# Patched by QuorumKit: keep brpc's historical -O2 optimization\n"
+            "# level for release-style builds, but let Debug builds stay\n"
+            "# unoptimized for sanitizer runs.\n"
+            'set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2")\n'
+            'set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")\n'
+            'set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O2")\n'
+            'set(CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -O2")'
+        )
+        if old_flags not in top_level:
+            raise RuntimeError("brpc compile-flag block changed; update patch")
+        top_level = top_level.replace(old_flags, new_flags, 1)
+
+        with open(top_level_cmake, "w") as f:
+            f.write(top_level)
+
+        src_cmake = os.path.join(self.source_folder, "src", "CMakeLists.txt")
+        with open(src_cmake) as f:
+            src = f.read()
+
+        old_ndebug = (
+            "if(NOT DEBUG)\n"
+            '    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DNDEBUG")\n'
+            '    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG")\n'
+            "endif()"
+        )
+        new_ndebug = (
+            "# Patched by QuorumKit: let CMake build types, not brpc's\n"
+            "# separate DEBUG option, decide when NDEBUG is defined."
+        )
+        if old_ndebug not in src:
+            raise RuntimeError("brpc NDEBUG block changed; update patch")
+        src = src.replace(old_ndebug, new_ndebug, 1)
+
+        with open(src_cmake, "w") as f:
+            f.write(src)
+
     def build(self):
+        self._patch_build_type_flags()
         self._patch_out_protoc_gen_mcpack()
         cmake = CMake(self)
         cmake.configure()

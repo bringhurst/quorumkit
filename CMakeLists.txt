@@ -6,6 +6,18 @@ project(quorumkit VERSION 0.1.0 LANGUAGES C CXX)
 # and the braft library code compiles cleanly under C++17.
 
 option(BUILD_UNIT_TESTS "Build unit tests" OFF)
+option(QUORUMKIT_SANITIZER_BUILD "Adjust test settings for sanitizer runs" OFF)
+set(QUORUMKIT_TEST_TIMEOUT_SECONDS "120" CACHE STRING "CTest timeout for regular builds")
+set(QUORUMKIT_SANITIZER_TEST_TIMEOUT_SECONDS "300" CACHE STRING "CTest timeout for sanitizer builds")
+
+# Sanitizer compiler and linker flags come from Conan profiles so dependencies
+# (especially brpc) are built consistently too.  This option only tunes the
+# test runtime settings inside the main CMake project.
+if(QUORUMKIT_SANITIZER_BUILD)
+    set(QUORUMKIT_EFFECTIVE_TEST_TIMEOUT_SECONDS "${QUORUMKIT_SANITIZER_TEST_TIMEOUT_SECONDS}")
+else()
+    set(QUORUMKIT_EFFECTIVE_TEST_TIMEOUT_SECONDS "${QUORUMKIT_TEST_TIMEOUT_SECONDS}")
+endif()
 
 # ---------------------------------------------------------------------------
 # Dependencies (all provided by Conan)
