@@ -16,7 +16,6 @@
 /test/output/
 /build/
 /site-build/
-/third-party/
 /node_modules/
 /.docusaurus/
 

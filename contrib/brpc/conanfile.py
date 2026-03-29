@@ -223,8 +223,7 @@ message(STATUS "ProtobufConfig shim: protoc at ${Protobuf_PROTOC_EXECUTABLE}")
 message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
 """
         config_path = os.path.join(self.generators_folder, "ProtobufConfig.cmake")
-        with open(config_path, "w") as f:
-            f.write(config)
+        save(self, config_path, config)
 
     @staticmethod
     def _find_lib(dep_info, name_hint=None):

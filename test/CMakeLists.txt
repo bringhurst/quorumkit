@@ -20,7 +20,6 @@ foreach(TEST_SRC ${TEST_SRCS})
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}         # test helper headers (util.h etc.)
             ${CMAKE_SOURCE_DIR}/src              # for "braft/..." includes
-            ${PROTO_OUT_DIR}                     # for generated pb headers
     )
 
     # Access private/protected members for white-box testing
