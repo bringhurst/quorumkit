@@ -64,6 +64,7 @@ ctest --preset conan-release --output-on-failure -LE known_crash
 ## Docs build fails with broken links
 
 ```sh
+cd website
 npm run build
 ```
 
@@ -74,9 +75,10 @@ Read the error output -- it tells you exactly which file has a bad link and what
 The Docusaurus binary comes from the project's npm dependencies. Install them first:
 
 ```sh
+cd website
 npm ci
 ```
 
 ## GitHub Pages shows a 404
 
-The production docs are served at `/docs/`, not at the site root. The root page (`/`) redirects to `/docs/`. If you see a 404 at the root, the redirect page (`src/pages/index.js`) may not have been deployed.
+The production docs are served at `/docs/`, not at the site root. The root page (`/`) redirects to `/docs/`. If you see a 404 at the root, the redirect page (`website/src/pages/index.js`) may not have been deployed.

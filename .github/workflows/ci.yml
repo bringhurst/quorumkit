@@ -4,21 +4,11 @@ on:
   push:
     branches: [master]
     paths-ignore:
-      - 'docs/**'
-      - 'static/**'
-      - 'src/css/**'
-      - 'src/pages/**'
-      - 'docusaurus.config.js'
-      - 'sidebars.js'
+      - 'website/**'
       - '*.md'
   pull_request:
     paths-ignore:
-      - 'docs/**'
-      - 'static/**'
-      - 'src/css/**'
-      - 'src/pages/**'
-      - 'docusaurus.config.js'
-      - 'sidebars.js'
+      - 'website/**'
       - '*.md'
   workflow_dispatch:
 

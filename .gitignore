@@ -18,6 +18,9 @@
 /site-build/
 /node_modules/
 /.docusaurus/
+/website/site-build/
+/website/node_modules/
+/website/.docusaurus/
 
 # CMake
 CMakeCache.txt

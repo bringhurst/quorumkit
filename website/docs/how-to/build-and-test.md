@@ -60,13 +60,15 @@ ctest --preset conan-release -L known_crash
 ## Build the docs site
 
 ```sh
+cd website
 npm ci
 npm run build
 ```
 
-The static output goes into `site-build/`. For a local preview with live reload:
+The static output goes into `website/site-build/`. For a local preview with live reload:
 
 ```sh
+cd website
 npm start
 ```
 
@@ -81,7 +83,7 @@ The docs are served at `http://localhost:3000/docs/`.
 | CMake root | `CMakeLists.txt` |
 | Library source + protos | `src/braft/` |
 | Tests | `test/` |
-| Docusaurus config | `docusaurus.config.js` |
-| Docs source | `docs/` |
+| Docusaurus config | `website/docusaurus.config.js` |
+| Docs source | `website/docs/` |
 | CI workflow (C++) | `.github/workflows/ci.yml` |
 | CI workflow (docs) | `.github/workflows/docs-pages.yml` |
