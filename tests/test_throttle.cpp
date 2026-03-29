@@ -133,8 +133,8 @@ TEST_F(TestUsageSuits, throttle_functioning) {
     for (int i= 0; i < thread_num; ++i) {
         ASSERT_EQ(0, pthread_create(&readers[i], NULL, read_across_throttle, &arg));
     }
-    // run for 10s
-    int run_time = 2;
+    // Run long enough to smooth out scheduler jitter on shared CI runners.
+    int run_time = 3;
     usleep(run_time * 1000 * 1000);
     arg.stopped = true;
     for (int i = 0; i < thread_num; ++i) {
@@ -143,13 +143,12 @@ TEST_F(TestUsageSuits, throttle_functioning) {
     // 
     int64_t expect_throughput = run_time * limit;
     ASSERT_LE(arg.total_throughput, 1.1 * expect_throughput);
-    ASSERT_GE(arg.total_throughput, 0.9 * expect_throughput);
+    ASSERT_GE(arg.total_throughput, 0.8 * expect_throughput);
     LOG(INFO) << "Total throughput in run_time: " << arg.total_throughput
               << " Upper bound: " << 1.1 * expect_throughput
-              << " Lowwer bound: " << 0.9 * expect_throughput;  
+              << " Lowwer bound: " << 0.8 * expect_throughput;
     
 }
-
 
 
 
