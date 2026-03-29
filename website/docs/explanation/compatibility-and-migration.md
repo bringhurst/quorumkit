@@ -26,8 +26,13 @@ This is now documented as a real contract rather than a general promise. If your
 
 ## Storage compatibility
 
-This is the harder part. If you have a running cluster with Raft logs and snapshots on disk, those files were written by the braft storage backends. QuorumKit still supports those backends, so existing data keeps working. But if you want to switch to a different storage backend (say, from local segment files to RocksDB), you need to migrate the data.
+This is the harder part. If you have a running cluster with Raft logs and snapshots on disk, those files were written by a specific storage backend family. QuorumKit still supports the existing braft backends, so existing data keeps working. But if you want to switch to a different backend family, you need a migration path that is precise, repeatable, and testable.
 
-Storage migration is a real operational task. It involves running old and new backends in parallel during a transition, validating that the new backend produces the same results, and having a rollback plan. The library provides the storage contracts and backend implementations, but the migration planning is yours.
+QuorumKit therefore treats migration as part of the storage contract itself. Every storage backend family must support:
+
+- bootstrap from any other backend family
+- dual write with any other backend family
+
+QuorumKit standardizes this through a canonical bootstrap representation so that new backends do not require a custom converter for every existing backend. For the precise rules, see [Storage backend contract](../reference/storage-backend-contract).
 
 For the practical steps, see [Migrate from braft](../how-to/migrate-from-braft).

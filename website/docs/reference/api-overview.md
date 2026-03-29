@@ -24,7 +24,7 @@ include/quorumkit/
     throttle.h     snapshot throttle
 ```
 
-`node.h` is where most users start. It defines the node lifecycle: create, start, apply, snapshot, shut down. The other headers support it.
+`node.h` is where most users start. It defines the node lifecycle: create, start, apply, snapshot, shut down. The other headers support it. `storage.h` is where the backend contracts live, including the requirement that backend families support dual write and bootstrap from any other backend family. See [Storage backend contract](./storage-backend-contract).
 
 ## `include/braft/`
 

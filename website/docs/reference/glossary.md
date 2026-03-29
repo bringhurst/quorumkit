@@ -15,4 +15,10 @@ sidebar_position: 5
 
 **Transport adapter** -- Code that moves Raft protocol messages between nodes. The core produces and consumes messages; the transport adapter decides whether they travel over brpc, raw TCP, RDMA, or an in-memory channel (for tests).
 
-**Storage backend** -- A concrete implementation of log storage, metadata storage, or snapshot storage. Examples: local segment files, RocksDB, SQLite, in-memory (for tests).
+**Storage backend family** -- A coordinated implementation of log storage, metadata storage, and snapshot storage chosen together as one backend option.
+
+**Dual write** -- A migration mode in which QuorumKit applies the same logical durable mutations to two backend families so either one can be used for cutover or rollback.
+
+**Bootstrap** -- Initializing an empty destination backend family from the durable state exported by a source backend family.
+
+**Canonical bootstrap image** -- A backend-neutral representation of durable Raft state used to bootstrap one backend family from another without requiring pairwise migration adapters.

@@ -19,7 +19,7 @@ The first question is not "how fast should I migrate?" It is "does my code stay 
 
 4. **Migrate application code.** Replace `#include <braft/...>` with `#include <quorumkit/...>` and update namespaces and type names. The braft compatibility layer can tell you where you still have old references -- if it still compiles only through `include/braft`, it has not been migrated yet.
 
-5. **Plan storage migration separately.** If you have persisted Raft logs and snapshots on disk, changing the storage backend is a distinct step from changing headers. QuorumKit supports the existing braft storage backends, so you can migrate the API without touching storage. When you are ready to change backends, do it deliberately and with validation. See [Storage layer](../explanation/storage-layer).
+5. **Plan storage migration separately.** If you have persisted Raft logs and snapshots on disk, changing the storage backend is a distinct step from changing headers. QuorumKit supports the existing braft storage backends, so you can migrate the API without touching storage. When you are ready to change backends, use the storage migration path QuorumKit requires: bootstrap the target backend family from the current one, run both in dual-write mode, validate equivalence, then cut over. See [Storage layer](../explanation/storage-layer) and [Storage backend contract](../reference/storage-backend-contract).
 
 ## What the compatibility layer does and does not do
 
