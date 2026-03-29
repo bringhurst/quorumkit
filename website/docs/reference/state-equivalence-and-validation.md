@@ -23,7 +23,7 @@ At a given validation cut, two durable states are logically equivalent if all of
 - for every retained log index, they expose the same logical log entry contents
 - they expose the same persisted term and voted-for information
 - they expose the same latest durable snapshot metadata
-- they expose the same logical snapshot contents through the snapshot reader contract
+- they expose the same logical snapshot contents through the snapshot reader contract, including the same relative file tree rooted at `SnapshotReader::get_path()`
 
 Logical equivalence does not require the same bytes on disk, the same file layout, or the same compaction strategy.
 
@@ -45,8 +45,9 @@ Two latest durable snapshots are equal for this contract if they match on:
 - last included index
 - last included term
 - the logical contents exposed through the snapshot reader contract
+- the relative file paths and file bytes made visible under `SnapshotReader::get_path()`
 
-They do not need to match on filename layout, directory naming, or backend-private storage structure.
+They do not need to match on backend-private storage structure outside the public snapshot tree. The public relative layout visible from `SnapshotReader::get_path()` is part of the contract.
 
 ## Validation stages
 

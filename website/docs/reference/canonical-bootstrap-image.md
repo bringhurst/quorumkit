@@ -53,7 +53,7 @@ At minimum it MUST include:
 - for each retained entry: index, term, logical entry type, and payload
 - persisted term and voted-for information needed for safe restart
 - the latest durable snapshot metadata, including last included index and term
-- the latest durable snapshot contents as exposed through the snapshot reader contract
+- the latest durable snapshot contents as exposed through the snapshot reader contract, including the relative file paths that make up the public snapshot tree
 
 If a backend family persists additional Raft-critical durable state beyond those items, that state MUST also round-trip through the canonical bootstrap image.
 

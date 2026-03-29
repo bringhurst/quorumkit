@@ -29,6 +29,8 @@ The goal is to let you migrate at your own pace. Existing code runs through the 
 
 This is now documented as a real contract rather than a general promise. If your code stays inside the surface listed in [braft compatibility contract](../reference/braft-compatibility-contract), QuorumKit intends that code to remain a drop-in source-level match.
 
+That contract is intentionally practical. It does not stop at class names and method signatures. It also covers legacy details real applications depend on, such as `local://` storage URIs, the snapshot directory tree made visible through `SnapshotReader::get_path()`, and the usual mock-oriented snapshot/configuration helpers used in conventional test suites.
+
 ## Wire compatibility
 
 This is what makes rolling migration possible instead of requiring a flag day. During a mixed-version rollout, old nodes and new nodes still have to elect leaders, replicate logs, install snapshots, and process admin operations together.
@@ -45,6 +47,8 @@ QuorumKit therefore treats migration as part of the storage contract itself. Eve
 - dual write with any other backend family
 
 QuorumKit standardizes this through a canonical bootstrap representation so that new backends do not require a custom converter for every existing backend. For the precise rules, see [Storage backend contract](../reference/storage-backend-contract).
+
+For existing deployments, this includes the legacy local braft storage family reached through `local://` URIs. Keeping those URI-level configurations valid is part of the compatibility story, not a special case outside it.
 
 ## Why these contracts stay separate
 

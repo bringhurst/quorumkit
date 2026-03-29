@@ -9,6 +9,8 @@ The headers under `include/braft/` exist so that an application already built ag
 
 The target use case is not a toy. It is an existing service that constructs `braft::Node`, subclasses `braft::StateMachine`, uses snapshots, manages peer changes, and carries a normal unit-test suite with braft mocks. QuorumKit wants that kind of codebase to treat the braft layer as a drop-in replacement.
 
+That drop-in promise now also covers the practical compatibility details those services usually depend on: legacy `local://` storage URIs, the on-disk snapshot tree visible through `SnapshotReader::get_path()`, and the ordinary mockable snapshot/configuration helpers used in their tests.
+
 The braft headers are thin adapters. Each one preserves the old names, namespaces, and calling patterns while forwarding into the QuorumKit implementation underneath. The engine is QuorumKit; the braft layer does not own a separate Raft core.
 
 ```mermaid

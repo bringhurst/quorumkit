@@ -14,6 +14,8 @@ The rule is simple: a storage backend is not complete unless it can participate 
 
 This is a hard requirement, not a best-effort goal.
 
+The legacy local braft storage family is part of this contract. Existing deployments that configure `log_uri`, `raft_meta_uri`, and `snapshot_uri` with `local://...` remain inside the supported storage surface.
+
 ## Terms
 
 - **Storage backend family** -- A coordinated implementation of log storage, metadata storage, and snapshot storage chosen together as one backend option. Examples: the local segment-file family, a RocksDB-backed family, an in-memory family for tests.
@@ -33,6 +35,12 @@ Every storage backend family MUST:
 - act as the mirror side of a dual-write pair
 
 These requirements apply to the full persistent Raft state, not just log entries.
+
+For compatibility with existing braft deployments, QuorumKit MUST continue to recognize the legacy `local://` URI family for:
+
+- log storage
+- single-node raft metadata storage
+- snapshot storage
 
 ## Canonical bootstrap model
 
@@ -57,7 +65,7 @@ At minimum that means:
 - for every retained log entry in that range, the entry index, term, type, and payload as observed through the storage contract
 - persisted Raft metadata needed for safe restart, including current term and voted-for peer
 - the latest durable snapshot metadata, including last included index and term
-- the latest durable snapshot contents as observed through the snapshot reader contract
+- the latest durable snapshot contents as observed through the snapshot reader contract, including relative file paths within the snapshot tree
 
 If a backend family persists additional Raft-critical state beyond these items, that state MUST also round-trip through the canonical bootstrap image.
 
@@ -78,7 +86,7 @@ In this contract, equivalent means:
 - for every retained log index, `A` and `B` expose the same logical log entry contents
 - `A` and `B` expose the same persisted term and voted-for information
 - `A` and `B` expose the same latest snapshot metadata
-- `A` and `B` expose the same logical snapshot contents through the snapshot reader contract
+- `A` and `B` expose the same logical snapshot contents through the snapshot reader contract, including the same relative file tree rooted at `SnapshotReader::get_path()`
 
 Equivalent does not require identical on-disk layout. Different backend families are free to serialize and organize bytes differently as long as the Raft-visible state is the same. The comparison rules are defined in [state equivalence and validation](./state-equivalence-and-validation).
 

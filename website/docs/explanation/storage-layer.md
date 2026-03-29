@@ -28,6 +28,8 @@ flowchart TD
 
 QuorumKit still supports the braft storage backends: local segment-file logs and filesystem-based snapshots. These are the backends most existing deployments use, and they continue to work through the compatibility layer. If you are migrating from braft, you do not need to change your storage to get started.
 
+That includes the legacy `local://` URI family used in `NodeOptions.log_uri`, `raft_meta_uri`, and `snapshot_uri`. QuorumKit treats that URI-level configuration shape as part of compatibility, not just an incidental implementation detail.
+
 ## Adding backends
 
 The storage contracts are defined in `src/internal/storage/`. A new backend implements the contract interface -- write log entries, read log entries, persist metadata, save and load snapshots -- and plugs in through configuration. The core does not know or care which backend is active.
@@ -51,3 +53,5 @@ The intended migration path is:
 5. cut over to `B`
 
 The validation step is not a vague operational check. QuorumKit defines [state equivalence and validation](../reference/state-equivalence-and-validation) as part of the migration design so cutover and rollback decisions can later become tests instead of folklore.
+
+For snapshot-backed services, that equivalence includes the public snapshot file tree itself: the relative paths and contents made visible under `SnapshotReader::get_path()` are part of the state the contracts preserve.

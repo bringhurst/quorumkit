@@ -32,6 +32,8 @@ Before calling a migration supported, QuorumKit assumes:
 - the source and destination storage backend families satisfy the storage contract
 - the operator has a way to validate durable-state equivalence before cutover
 
+For existing braft deployments, this includes the common case where the node keeps using legacy `local://` storage URIs while the binary changes underneath it.
+
 ## Node-level guarantees
 
 During a supported rolling migration, a migrated node MUST be able to:

@@ -14,6 +14,7 @@ The goal is simple: an existing service that already uses the public braft API s
 - proposes `braft::Task` objects
 - manages snapshots through `SnapshotWriter` and `SnapshotReader`
 - changes peer sets and transfers leadership
+- uses the legacy `local://` storage URIs in `braft::NodeOptions`
 - carries a conventional C++ test suite that mocks `braft::Node`, `SnapshotWriter`, and `SnapshotReader`
 
 If a symbol is listed here, QuorumKit should preserve its source-level shape and the documented behavior. If a symbol is not listed here, it is not part of the stable compatibility promise.
@@ -55,6 +56,8 @@ QuorumKit MUST provide these symbols with these source-visible shapes.
   - MUST expose virtual `void on_configuration_committed(const ::braft::Configuration&, int64_t)`
 - `struct braft::NodeOptions`
   - MUST expose public fields `election_timeout_ms`, `snapshot_interval_s`, `catchup_margin`, `initial_conf`, `fsm`, `node_owns_fsm`, `log_uri`, `raft_meta_uri`, `snapshot_uri`, `filter_before_copy_remote`, and `disable_cli`
+  - MUST continue to accept the legacy `local://` URI family in `log_uri`, `raft_meta_uri`, and `snapshot_uri`
+  - MUST keep `filter_before_copy_remote = true` as the legacy "skip remote snapshot files whose relative path and checksum already match local state" behavior
 - `class braft::Node`
   - MUST expose constructor `Node(const GroupId&, const PeerId&)`
   - MUST expose `int init(const NodeOptions&)`
@@ -72,7 +75,10 @@ QuorumKit MUST provide these symbols with these source-visible shapes.
   - MUST expose `bool is_empty() const`
 - `class braft::Configuration`
   - MUST be default constructible
+  - MUST expose construction from `std::vector<PeerId>`
   - MUST expose `bool add_peer(const PeerId&)`
+  - MUST expose `bool equals(const std::vector<PeerId>&) const`
+  - MUST expose `bool equals(const Configuration&) const`
   - MUST support stream output with `operator<<`
 - `braft::ANY_PEER`
   - MUST exist as a `PeerId` sentinel usable with `Node::transfer_leadership_to`
@@ -86,12 +92,23 @@ QuorumKit MUST provide these snapshot symbols for application code that saves an
 - `class braft::SnapshotWriter`
   - MUST expose `std::string get_path()`
   - MUST expose `int add_file(const std::string&)`
+  - MUST expose `int add_file(const std::string&, const ::google::protobuf::Message*)`
+  - MUST expose `int save_meta(const braft::SnapshotMeta&)`
+  - MUST expose `void list_files(std::vector<std::string>*)`
+  - MUST expose `int get_file_meta(const std::string&, ::google::protobuf::Message*)`
+  - MUST expose `int remove_file(const std::string&)`
+  - MUST accept relative paths containing directory separators and preserve those relative paths as part of the snapshot contents
 - `class braft::SnapshotReader`
   - MUST expose `std::string get_path()`
   - MUST expose `int load_meta(SnapshotMeta*)`
+  - MUST expose `void list_files(std::vector<std::string>*)`
+  - MUST expose `int get_file_meta(const std::string&, ::google::protobuf::Message*)`
+  - MUST expose `std::string generate_uri_for_copy()`
+  - MUST expose a materialized on-disk snapshot tree under `get_path()` whose relative file layout matches the files previously published through `SnapshotWriter::add_file(...)`
 - `class braft::SnapshotMeta`
   - MUST expose `int64_t last_included_index() const`
   - MUST expose `int64_t last_included_term() const`
+  - MUST expose setters for `last_included_index` and `last_included_term`
 
 ### `braft/util.h`
 
@@ -107,35 +124,20 @@ QuorumKit MUST provide these snapshot symbols for application code that saves an
 
 The compatibility layer is also expected to support a normal unit-test style where test doubles derive from braft interfaces directly.
 
-These items are part of the contract too, but they are secondary to the runtime surface above.
+These items are part of the contract too. They remain secondary to the runtime surface above, but they are still in contract because drop-in compatibility includes ordinary mock-based test suites.
 
 ### `braft/node.h`
 
-- `braft::Node` SHOULD remain subclassable in tests
-- The methods listed in the runtime contract SHOULD remain virtual-compatible for mocking and derived test doubles
+- `braft::Node` MUST remain subclassable in tests
+- The methods listed in the runtime contract MUST remain virtual-compatible for mocking and derived test doubles
 
 ### `braft/storage.h`
 
-QuorumKit SHOULD preserve the abstract snapshot interface used by mock-heavy test suites.
-
-- `class braft::SnapshotWriter`
-  - SHOULD expose `void list_files(std::vector<std::string>*)`
-  - SHOULD expose `int get_file_meta(const std::string&, ::google::protobuf::Message*)`
-  - SHOULD expose `int save_meta(const braft::SnapshotMeta&)`
-  - SHOULD expose `int add_file(const std::string&, const ::google::protobuf::Message*)`
-  - SHOULD expose `int remove_file(const std::string&)`
-- `class braft::SnapshotReader`
-  - SHOULD expose `void list_files(std::vector<std::string>*)`
-  - SHOULD expose `int get_file_meta(const std::string&, ::google::protobuf::Message*)`
-  - SHOULD expose `std::string generate_uri_for_copy()`
-- `class braft::SnapshotMeta`
-  - SHOULD expose setters for `last_included_index` and `last_included_term`
+QuorumKit MUST preserve the abstract snapshot interface used by mock-heavy test suites.
 
 ### `braft/configuration.h`
 
-- `braft::Configuration` SHOULD expose construction from `std::vector<PeerId>`
-- `braft::Configuration` SHOULD expose `bool equals(const std::vector<PeerId>&) const`
-- `braft::Configuration` SHOULD expose `bool equals(const Configuration&) const`
+- `braft::Configuration` constructor and equality helpers from the runtime section MUST remain available for test code too
 
 ## Out of contract
 
@@ -158,6 +160,9 @@ QuorumKit does intend to preserve a few behavior-level assumptions because exist
 - `Closure::status()` remains the place where asynchronous result status is reported
 - `Task.expected_term == -1` continues to mean "do not enforce an expected-term check"
 - `ANY_PEER` continues to mean "pick a suitable follower" when transferring leadership
+- operations that fail because the target node is not currently leader, has stepped down, or is shutting down during the attempt continue to report `EPERM` through `Closure::status().error_code()`
+- the legacy local-storage path remains available through `local://` URIs, so applications that already point `log_uri`, `raft_meta_uri`, and `snapshot_uri` at local braft storage keep their URI-level configuration shape
+- snapshot file trees remain visible through `SnapshotReader::get_path()` with the same relative layout previously published through `SnapshotWriter::add_file(...)`
 
 Beyond that, the compatibility promise is deliberately narrow. If you need a specific behavior preserved, it should be documented here so it can become a test.
 
