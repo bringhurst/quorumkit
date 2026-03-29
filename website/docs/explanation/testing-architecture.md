@@ -27,6 +27,15 @@ tests/
 
 All tests use Google Test. Most of the inherited suite still compiles with `-Dprivate=public -Dprotected=public` to access library internals. That white-box access is now explicit in the directory layout: `tests/public/` is for public-facing behavior, while `tests/internal/` and most of `tests/legacy/` still lean on internals.
 
+The public tree now has the first contract smoke tests in place for:
+
+- `braft` API surface
+- runtime `braft` behavior (`EPERM`, `ANY_PEER` leadership transfer)
+- local storage URI compatibility
+- nested snapshot tree round-tripping
+- wire schema shape and snapshot-copy URI grammar
+- restart-safe migration smoke coverage for the legacy `local://` storage shape
+
 ## Test isolation
 
 Each test binary gets its own working directory under `testwd/<test_name>/` in the build tree. This prevents interference because many tests hardcode relative paths (`./data`) and listen ports. Tests that share port ranges are grouped with CTest `RESOURCE_LOCK` properties so they never run concurrently, even under `ctest -j`.
@@ -43,7 +52,7 @@ These are labeled `known_crash` in CMake and excluded from CI with `ctest -LE kn
 
 ## Test results
 
-20 of the 23 inherited tests pass in the default run. The 3 known-crash tests are excluded. A full passing run:
+The default run is green. It includes the currently stable inherited tests plus the first wave of public contract smoke tests. The 3 known-crash legacy tests are excluded. A full passing run:
 
 ```sh
 ctest --preset conan-release --output-on-failure -LE known_crash

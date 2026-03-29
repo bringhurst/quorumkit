@@ -20,9 +20,9 @@ quorumkit_add_internal_test(
 )
 
 quorumkit_add_internal_test(
-    NAME test_configuration
+    NAME test_configuration_manager
     DOMAIN core
-    SOURCES test_configuration.cpp
+    SOURCES test_configuration_manager.cpp
     LABELS unit
 )
 

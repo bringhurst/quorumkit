@@ -59,6 +59,7 @@ TEST(WireContract, LegacyFieldNumbersRemainStable) {
     expect_field_number(entry_meta, "peers", 3);
     expect_field_number(entry_meta, "data_len", 4);
     expect_field_number(entry_meta, "old_peers", 5);
+    EXPECT_EQ(nullptr, entry_meta->FindFieldByName("data"));
 
     const auto* install_snapshot = braft::InstallSnapshotRequest::descriptor();
     expect_field_number(install_snapshot, "group_id", 1);
@@ -82,4 +83,9 @@ TEST(WireContract, LegacyFieldNumbersRemainStable) {
     expect_field_number(get_file, "count", 3);
     expect_field_number(get_file, "offset", 4);
     expect_field_number(get_file, "read_partly", 5);
+
+    const auto* get_file_response = braft::GetFileResponse::descriptor();
+    expect_field_number(get_file_response, "eof", 1);
+    expect_field_number(get_file_response, "read_size", 2);
+    EXPECT_EQ(nullptr, get_file_response->FindFieldByName("data"));
 }

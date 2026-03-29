@@ -72,6 +72,7 @@ QuorumKit MUST provide these symbols with these source-visible shapes.
   - MUST expose constructor `PeerId(butil::EndPoint, int)`
   - MUST expose public field `butil::EndPoint addr`
   - MUST expose `int parse(const std::string&)`
+  - MUST expose `std::string to_string() const`
   - MUST expose `bool is_empty() const`
 - `class braft::Configuration`
   - MUST be default constructible

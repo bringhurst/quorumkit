@@ -90,7 +90,7 @@ There are 8 proto files in `src/braft/`. They have no standard protobuf imports 
 
 ### Tests
 
-- **20 passing tests** in the default GCC/macOS runs, 3 with known upstream crashes (labeled `known_crash`, excluded from CI with `-LE known_crash`).
+- The default GCC/macOS test run is green, with 3 known upstream crashes labeled `known_crash` and excluded from CI with `-LE known_crash`.
 - Tests use `-Dprivate=public -Dprotected=public` to access internals -- ugly but necessary for now.
 - Each test binary gets its own working directory under `testwd/<test_name>/`.
 - Tests sharing the same ports use `RESOURCE_LOCK` properties to avoid conflicts.

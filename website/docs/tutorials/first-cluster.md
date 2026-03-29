@@ -42,7 +42,7 @@ Confirm everything works:
 ctest --preset conan-release --output-on-failure -LE known_crash
 ```
 
-You should see 20 tests pass. The `-LE known_crash` flag skips three tests with upstream braft bugs.
+You should see a clean test run. The `-LE known_crash` flag skips three tests with upstream braft bugs.
 
 ## Build the counter example
 
