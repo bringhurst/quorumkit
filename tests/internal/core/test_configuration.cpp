@@ -21,13 +21,13 @@
 #include "braft/raft.h"
 #include "braft/configuration_manager.h"
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
 };
 
-TEST_F(TestUsageSuits, PeerId) {
+TEST_F(TestUsageSuite, PeerId) {
     braft::PeerId id1;
     ASSERT_TRUE(id1.is_empty());
 
@@ -65,7 +65,7 @@ TEST_F(TestUsageSuits, PeerId) {
     LOG(INFO) << "id:" << id3;
 }
 
-TEST_F(TestUsageSuits, Configuration) {
+TEST_F(TestUsageSuite, Configuration) {
     braft::Configuration conf1;
     ASSERT_TRUE(conf1.empty());
     std::vector<braft::PeerId> peers;
@@ -102,7 +102,7 @@ TEST_F(TestUsageSuits, Configuration) {
     ASSERT_EQ(peer_vector.size(), 3);
 }
 
-TEST_F(TestUsageSuits, ConfigurationManager) {
+TEST_F(TestUsageSuite, ConfigurationManager) {
     braft::ConfigurationManager conf_manager;
 
     braft::ConfigurationEntry it1;

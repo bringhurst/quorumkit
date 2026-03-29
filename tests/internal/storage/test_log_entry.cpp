@@ -21,13 +21,13 @@
 #include <butil/iobuf.h>
 #include "braft/log_entry.h"
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
 };
 
-TEST_F(TestUsageSuits, LogEntry) {
+TEST_F(TestUsageSuite, LogEntry) {
     braft::LogEntry* entry = new braft::LogEntry();
     std::vector<braft::PeerId> peers;
     peers.push_back(braft::PeerId("1.2.3.4:1000"));

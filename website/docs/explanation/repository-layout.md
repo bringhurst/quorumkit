@@ -16,8 +16,10 @@ src/
   braft/              library source, headers, and proto files
 
 tests/
-  test_*.cpp          23 unit tests
-  util.h              test helper
+  public/             public-facing contract tests
+  internal/           implementation-facing tests
+  legacy/             inherited upstream-style regression tests
+  support/            shared test helpers and shims
 
 examples/
   counter/            replicated counter
@@ -50,9 +52,12 @@ src/
 tests/
   public/
     quorumkit/      tests against the QuorumKit API
-    braft_compat/   tests against the braft API
+    braft/          tests against the braft API contract
+    wire/           tests for mixed-version wire behavior
+    storage/        tests for backend/bootstrap/storage guarantees
+    migration/      tests for end-to-end rollout invariants
   internal/         tests for internal modules
-  simulation/       deterministic simulation tests
+  legacy/           inherited regression tests that do not define the public spec
 ```
 
 ## Why this split matters

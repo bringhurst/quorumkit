@@ -34,7 +34,7 @@ quorumkit/
     braft/                  # Library source (C++ and proto files)
     CMakeLists.txt          # Proto generation + braft library target
   examples/                 # Example applications (counter, atomic, block)
-  tests/                    # Tests (test_*.cpp)
+  tests/                    # Test suites (public, internal, legacy, support)
   .github/workflows/        # GitHub Actions (ci.yml, docs-pages.yml)
   conanfile.py              # Top-level Conan recipe for QuorumKit
   CMakeLists.txt            # Top-level CMake project setup

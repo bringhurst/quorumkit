@@ -12,7 +12,7 @@ conanfile.py          Conan 2 recipe for QuorumKit
 contrib/brpc/         local Conan recipe for brpc (not on Conan Center)
 CMakeLists.txt        top-level CMake project
 src/CMakeLists.txt    library target, protobuf generation
-tests/CMakeLists.txt  test targets with isolation and resource locks
+tests/CMakeLists.txt  shared test-target helpers and suite wiring
 examples/CMakeLists.txt optional example targets (enabled with BUILD_EXAMPLES)
 ```
 

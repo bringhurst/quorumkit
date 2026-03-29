@@ -16,7 +16,8 @@
 #include <brpc/closure_guard.h>
 #include <bthread/bthread.h>
 #include <bthread/countdown_event.h>
-#include "../tests/util.h"
+#include "support/braft_test_util.h"
+#include "support/fs_test_util.h"
 
 namespace braft {
 extern bvar::Adder<int64_t> g_num_nodes;
@@ -28,14 +29,6 @@ DECLARE_bool(raft_enable_witness_to_leader);
 }
 
 using braft::raft_mutex_t;
-class TestEnvironment : public ::testing::Environment {
-public:
-    void SetUp() {
-    }
-    void TearDown() {
-    }
-};
-
 class NodeTest : public testing::TestWithParam<const char*> {
 protected:
     void SetUp() {
@@ -55,11 +48,11 @@ protected:
             braft::FLAGS_raft_max_append_entries_cache_size = 8;
         }
         LOG(INFO) << "Start unitests: " << GetParam();
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
         ASSERT_EQ(0, braft::g_num_nodes.get_value());
     }
     void TearDown() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
         // Sleep for a while to wait all timer has stopped
         if (braft::g_num_nodes.get_value() != 0) {
             usleep(1000 * 1000);
@@ -1086,8 +1079,8 @@ TEST_P(NodeTest, restart_without_stable_meta) {
     butil::EndPoint follower_addr = nodes[0]->node_id().peer_id.addr;
     cluster.stop(follower_addr);
 
-    ::system(butil::string_printf("rm -rf ./data/%s/stable/*",
-                                 butil::endpoint2str(follower_addr).c_str()).c_str());
+    quorumkit::test::remove_children(
+        butil::string_printf("./data/%s/stable", butil::endpoint2str(follower_addr).c_str()));
 
     LOG(INFO) << "restart follower";
     ASSERT_EQ(0, cluster.start(follower_addr));
@@ -2711,7 +2704,7 @@ TEST_P(NodeTest, read_committed_user_log) {
     cluster.stop_all();
 }
 
-TEST_P(NodeTest, boostrap_with_snapshot) {
+TEST_P(NodeTest, bootstrap_with_snapshot) {
     butil::EndPoint addr;
     ASSERT_EQ(0, butil::str2endpoint("127.0.0.1:5006", &addr));
     MockFSM fsm(addr);
@@ -2753,7 +2746,7 @@ TEST_P(NodeTest, boostrap_with_snapshot) {
     node.join();
 }
 
-TEST_P(NodeTest, boostrap_without_snapshot) {
+TEST_P(NodeTest, bootstrap_without_snapshot) {
     butil::EndPoint addr;
     ASSERT_EQ(0, butil::str2endpoint("127.0.0.1:5006", &addr));
     braft::BootstrapOptions boptions;
@@ -3566,16 +3559,15 @@ TEST_P(NodeTest, readonly) {
     cluster.stop_all();
 }
 
-INSTANTIATE_TEST_CASE_P(NodeTestWithoutPipelineReplication,
+INSTANTIATE_TEST_SUITE_P(NodeTestWithoutPipelineReplication,
                         NodeTest,
                         ::testing::Values("NoReplcation"));
 
-INSTANTIATE_TEST_CASE_P(NodeTestWithPipelineReplication,
+INSTANTIATE_TEST_SUITE_P(NodeTestWithPipelineReplication,
                         NodeTest,
                         ::testing::Values("NoCache", "HasCache"));
 
 int main(int argc, char* argv[]) {
-    ::testing::AddGlobalTestEnvironment(new TestEnvironment());
     ::testing::InitGoogleTest(&argc, argv);
     GFLAGS_NS::SetCommandLineOption("minloglevel", "1");
     GFLAGS_NS::ParseCommandLineFlags(&argc, &argv, true);

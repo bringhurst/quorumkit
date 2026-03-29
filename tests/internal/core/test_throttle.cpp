@@ -10,7 +10,7 @@
 #include "braft/util.h"
 #include "braft/snapshot_throttle.h"
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
@@ -45,7 +45,7 @@ void *read_across_throttle(void* arg) {
     return NULL;
 }
 
-TEST_F(TestUsageSuits, test_throttled_by_throughput) {
+TEST_F(TestUsageSuite, test_throttled_by_throughput) {
     int64_t check_cycle = 8;
     int64_t throttle_throughput_bytes = 1024;
     int sleep_us = 1000 * 1000 / 8 + 1;
@@ -63,7 +63,7 @@ TEST_F(TestUsageSuits, test_throttled_by_throughput) {
     EXPECT_EQ(0, tt.throttled_by_throughput(need_bytes));
 }
 
-TEST_F(TestUsageSuits, throttle_functioning) {
+TEST_F(TestUsageSuite, throttle_functioning) {
     // disk limit: 30M/s, cycles: 10 times/s
     int64_t limit = 30 * 1024 * 1024;
     const int64_t cycles = 10;
