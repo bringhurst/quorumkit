@@ -451,7 +451,71 @@ message(STATUS "ProtobufConfig shim: headers at ${Protobuf_INCLUDE_DIR}")
         with open(toolchain_path, "a") as f:
             f.write("\n".join(lines) + "\n")
 
+    def _patch_out_protoc_gen_mcpack(self):
+        """Remove the protoc-gen-mcpack build target from brpc's CMake.
+
+        protoc-gen-mcpack is a protobuf compiler plugin for brpc's mcpack
+        serialization format.  QuorumKit does not use mcpack, so we don't
+        need this binary.
+
+        On Linux, protoc-gen-mcpack fails to link because brpc's
+        DYNAMIC_LIB variable has incorrect static-library link order:
+        zlib appears before OpenSSL, so when the GNU single-pass linker
+        processes libcrypto.a and needs zlib symbols, they've already been
+        discarded.  The macOS ld64 linker does multi-pass so this works
+        locally but fails in CI (ubuntu-24.04).
+
+        Rather than fixing the link order for a binary we don't need,
+        we comment out all lines that reference the protoc-gen-mcpack
+        target (plus any continuation lines of multi-line CMake commands).
+        The brpc static library (brpc-static) builds and installs fine
+        without it — there is no install() rule for protoc-gen-mcpack
+        in brpc's src/CMakeLists.txt.
+        """
+        src_cmake = os.path.join(self.source_folder, "src", "CMakeLists.txt")
+
+        with open(src_cmake) as f:
+            content = f.read()
+
+        # Comment out every line that references protoc-gen-mcpack or
+        # protoc_gen_mcpack, plus continuation lines of multi-line CMake
+        # commands.  A multi-line command is detected by counting parens:
+        # if a matching line opens a '(' without a closing ')', we keep
+        # commenting until the parens balance.
+        patched_lines = []
+        header_added = False
+        in_multiline = False
+        paren_depth = 0
+
+        for line in content.splitlines(True):
+            is_match = "protoc-gen-mcpack" in line or "protoc_gen_mcpack" in line
+
+            if is_match or in_multiline:
+                if not header_added:
+                    patched_lines.append(
+                        "# Patched out by QuorumKit brpc recipe — not needed, "
+                        "fails to link on Linux.\n"
+                    )
+                    patched_lines.append(
+                        "# See contrib/brpc/conanfile.py "
+                        "_patch_out_protoc_gen_mcpack() for details.\n"
+                    )
+                    header_added = True
+                patched_lines.append("# " + line)
+
+                # Track paren depth for multi-line CMake commands.
+                # Strip comments before counting (CMake # comments).
+                code = line.split("#")[0] if not in_multiline else line
+                paren_depth += code.count("(") - code.count(")")
+                in_multiline = paren_depth > 0
+            else:
+                patched_lines.append(line)
+
+        with open(src_cmake, "w") as f:
+            f.writelines(patched_lines)
+
     def build(self):
+        self._patch_out_protoc_gen_mcpack()
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
