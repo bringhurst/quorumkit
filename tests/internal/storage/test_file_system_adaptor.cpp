@@ -6,16 +6,17 @@
 
 #include <gtest/gtest.h>
 #include "braft/file_system_adaptor.h"
+#include "support/fs_test_util.h"
 
-class TestFileSystemAdaptorSuits : public testing::Test {
+class TestFileSystemAdaptorSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
 };
 
-TEST_F(TestFileSystemAdaptorSuits, read_write) {
-    ::system("rm -f test_file");
-    ::system("rm -f test_file1");
+TEST_F(TestFileSystemAdaptorSuite, read_write) {
+    quorumkit::test::remove_path("test_file");
+    quorumkit::test::remove_path("test_file1");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     butil::File::Error e;
     braft::FileAdaptor* file = fs->open("test_file", O_CREAT | O_TRUNC | O_RDWR, NULL, &e);
@@ -47,13 +48,13 @@ TEST_F(TestFileSystemAdaptorSuits, read_write) {
     ASSERT_TRUE(file == NULL);
     ASSERT_EQ(butil::File::FILE_ERROR_NOT_FOUND, e);
 
-    ::system("rm -f test_file");
-    ::system("rm -f test_file1");
+    quorumkit::test::remove_path("test_file");
+    quorumkit::test::remove_path("test_file1");
 }
 
-TEST_F(TestFileSystemAdaptorSuits, delete_file) {
-    ::system("rm -f test_file");
-    ::system("touch test_file");
+TEST_F(TestFileSystemAdaptorSuite, delete_file) {
+    quorumkit::test::remove_path("test_file");
+    quorumkit::test::touch_file("test_file");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     ASSERT_TRUE(fs->path_exists("test_file"));
     ASSERT_TRUE(!fs->directory_exists("test_file"));
@@ -64,8 +65,9 @@ TEST_F(TestFileSystemAdaptorSuits, delete_file) {
     ASSERT_TRUE(!fs->path_exists("test_file"));
     ASSERT_TRUE(!fs->directory_exists("test_file"));
 
-    ::system("rm -rf test_dir/");
-    ::system("mkdir -p test_dir/test_dir/ && touch test_dir/test_dir/test_file");
+    quorumkit::test::remove_path("test_dir");
+    quorumkit::test::ensure_dir("test_dir/test_dir");
+    quorumkit::test::touch_file("test_dir/test_dir/test_file");
     ASSERT_TRUE(fs->path_exists("test_dir"));
     ASSERT_TRUE(fs->directory_exists("test_dir"));
     ASSERT_TRUE(fs->path_exists("test_dir/test_dir/"));
@@ -79,37 +81,38 @@ TEST_F(TestFileSystemAdaptorSuits, delete_file) {
     ASSERT_TRUE(fs->delete_file("test_dir", false));
 }
 
-TEST_F(TestFileSystemAdaptorSuits, rename) {
-    ::system("rm -f test_file");
-    ::system("touch test_file");
+TEST_F(TestFileSystemAdaptorSuite, rename) {
+    quorumkit::test::remove_path("test_file");
+    quorumkit::test::touch_file("test_file");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     ASSERT_TRUE(fs->rename("test_file", "test_file2"));
     ASSERT_TRUE(fs->rename("test_file2", "test_file2"));
-    ::system("touch test_file");
+    quorumkit::test::touch_file("test_file");
     ASSERT_TRUE(fs->rename("test_file2", "test_file"));
     ASSERT_TRUE(fs->path_exists("test_file"));
     ASSERT_TRUE(!fs->path_exists("test_file2"));
 
-    ::system("rm -rf test_dir");
-    ::system("mkdir test_dir");
+    quorumkit::test::remove_path("test_dir");
+    quorumkit::test::ensure_dir("test_dir");
     ASSERT_TRUE(!fs->rename("test_file", "test_dir"));
     ASSERT_TRUE(fs->rename("test_file", "test_dir/test_file"));
 
-    ::system("rm -rf test_dir1");
-    ::system("mkdir test_dir1 && touch test_dir1/test_file");
+    quorumkit::test::remove_path("test_dir1");
+    quorumkit::test::ensure_dir("test_dir1");
+    quorumkit::test::touch_file("test_dir1/test_file");
     ASSERT_TRUE(!fs->rename("test_dir", "test_dir1"));
 
-    ::system("rm -f test_dir1/test_file");
+    quorumkit::test::remove_path("test_dir1/test_file");
     ASSERT_TRUE(fs->rename("test_dir", "test_dir1"));
     ASSERT_TRUE(!fs->directory_exists("test_dir"));
     ASSERT_TRUE(fs->directory_exists("test_dir1"));
     ASSERT_TRUE(fs->path_exists("test_dir1/test_file"));
 
-    ::system("rm -rf test_dir1");
+    quorumkit::test::remove_path("test_dir1");
 }
 
-TEST_F(TestFileSystemAdaptorSuits, create_directory) {
-    ::system("rm -rf test_dir");
+TEST_F(TestFileSystemAdaptorSuite, create_directory) {
+    quorumkit::test::remove_path("test_dir");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     butil::File::Error error;
     ASSERT_TRUE(fs->create_directory("test_dir", &error, false));
@@ -119,7 +122,7 @@ TEST_F(TestFileSystemAdaptorSuits, create_directory) {
     ASSERT_TRUE(fs->create_directory("test_dir/test_dir/test_dir", &error, true));
     ASSERT_TRUE(fs->create_directory("test_dir/test_dir", &error, true));
 
-    ::system("touch test_dir/test_file");
+    quorumkit::test::touch_file("test_dir/test_file");
     ASSERT_TRUE(!fs->create_directory("test_dir/test_file", &error, true));
     ASSERT_EQ(error, butil::File::FILE_ERROR_EXISTS);
 
@@ -129,12 +132,13 @@ TEST_F(TestFileSystemAdaptorSuits, create_directory) {
     ASSERT_TRUE(braft::create_sub_directory("test_dir", "test_dir2/test2", fs, &error));
     ASSERT_TRUE(fs->directory_exists("test_dir/test_dir2/test2"));
 
-    ::system("rm -rf test_dir");
+    quorumkit::test::remove_path("test_dir");
 }
 
-TEST_F(TestFileSystemAdaptorSuits, directory_reader) {
-    ::system("rm -rf test_dir");
-    ::system("mkdir -p test_dir/test_dir && touch test_dir/test_file");
+TEST_F(TestFileSystemAdaptorSuite, directory_reader) {
+    quorumkit::test::remove_path("test_dir");
+    quorumkit::test::ensure_dir("test_dir/test_dir");
+    quorumkit::test::touch_file("test_dir/test_file");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     braft::DirReader* dir_reader = fs->directory_reader("test_dir");
     std::set<std::string> names;
@@ -149,15 +153,15 @@ TEST_F(TestFileSystemAdaptorSuits, directory_reader) {
     ASSERT_TRUE(names.empty());
     delete dir_reader;
 
-    ::system("rm -rf test_dir");
+    quorumkit::test::remove_path("test_dir");
     dir_reader = fs->directory_reader("test_dir");
     ASSERT_TRUE(!dir_reader->is_valid());
     delete dir_reader;
 }
 
-TEST_F(TestFileSystemAdaptorSuits, create_sub_directory) {
-    ::system("rm -rf test_dir");
-    ::system("mkdir test_dir");
+TEST_F(TestFileSystemAdaptorSuite, create_sub_directory) {
+    quorumkit::test::remove_path("test_dir");
+    quorumkit::test::ensure_dir("test_dir");
     scoped_refptr<braft::FileSystemAdaptor> fs = new braft::PosixFileSystemAdaptor();
     std::string parent_path = "test_dir/sub1/";
     ASSERT_FALSE(braft::create_sub_directory(parent_path, "/", fs, NULL));
@@ -174,7 +178,7 @@ TEST_F(TestFileSystemAdaptorSuits, create_sub_directory) {
     ASSERT_TRUE(fs->directory_exists(parent_path + "sub2/sub3"));
     ASSERT_TRUE(fs->directory_exists(parent_path + "sub4/sub5"));
     ASSERT_FALSE(braft::create_sub_directory(parent_path, "../sub4/sub5", fs, NULL));
-    ::system("rm -rf test_dir");
+    quorumkit::test::remove_path("test_dir");
 }
 
 class TestFileReadAdaptor : public braft::BufferedSequentialReadFileAdaptor {
@@ -208,7 +212,7 @@ private:
     int _align_size;
 };
 
-TEST_F(TestFileSystemAdaptorSuits, test_buffered_sequential_read_file_adaptor_success) {
+TEST_F(TestFileSystemAdaptorSuite, test_buffered_sequential_read_file_adaptor_success) {
     int read_size[]  = { 1, 1, 10, 10, 13, 13, 201,         201, 1024, 1024 };
     int align_size[] = { 1, 4,  1, 11,  1, 20,   1, 1024 * 1024,    1, 1024 * 1024 + 1 };
     int index = 0;
@@ -240,7 +244,7 @@ TEST_F(TestFileSystemAdaptorSuits, test_buffered_sequential_read_file_adaptor_su
     }
 }
 
-TEST_F(TestFileSystemAdaptorSuits, test_buffered_sequential_read_file_adaptor_fail) {
+TEST_F(TestFileSystemAdaptorSuite, test_buffered_sequential_read_file_adaptor_fail) {
     int rs = 1024;
     TestFileReadAdaptor* file = new TestFileReadAdaptor(1 * 1024 * 1024, 1);
     butil::IOPortal portal;
@@ -300,7 +304,7 @@ private:
     int _align_size;
 };
 
-TEST_F(TestFileSystemAdaptorSuits, test_buffered_sequential_write_file_adaptor) {
+TEST_F(TestFileSystemAdaptorSuite, test_buffered_sequential_write_file_adaptor) {
     const int align_size = 8;
     butil::IOPortal target_file;
     TestFileWriteAdapor* file = new TestFileWriteAdapor(target_file, align_size);
@@ -422,9 +426,9 @@ private:
     int _error;
 };
 
-TEST_F(TestFileSystemAdaptorSuits, test_buffered_sequential_writer_with_hole) {
-    ::system("rm -rf test_reader_with_hole");
-    ::system("rm -rf test_writer_with_hole");
+TEST_F(TestFileSystemAdaptorSuite, test_buffered_sequential_writer_with_hole) {
+    quorumkit::test::remove_path("test_reader_with_hole");
+    quorumkit::test::remove_path("test_writer_with_hole");
     const std::string reader_path = "test_reader_with_hole";
     int fd = open(reader_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644);
     char tmp_buf[9];

@@ -8,7 +8,7 @@ namespace braft {
 extern void global_init_once_or_die();
 };
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {
         braft::global_init_once_or_die();
@@ -16,7 +16,7 @@ protected:
     void TearDown() {}
 };
 
-TEST_F(TestUsageSuits, single_stable_storage) {
+TEST_F(TestUsageSuite, single_stable_storage) {
     system("rm -rf stable");
     braft::FileBasedSingleMetaStorage* storage = 
                         new braft::FileBasedSingleMetaStorage("./stable");
@@ -87,7 +87,7 @@ TEST_F(TestUsageSuits, single_stable_storage) {
     delete storage;
 }
 
-TEST_F(TestUsageSuits, merged_stable_storage) {
+TEST_F(TestUsageSuite, merged_stable_storage) {
     system("rm -rf merged_stable");
     braft::KVBasedMergedMetaStorage* storage = 
                     new braft::KVBasedMergedMetaStorage("./merged_stable");
@@ -160,7 +160,7 @@ TEST_F(TestUsageSuits, merged_stable_storage) {
     delete storage;
 }
 
-TEST_F(TestUsageSuits, mixed_stable_storage_upgrade) {
+TEST_F(TestUsageSuite, mixed_stable_storage_upgrade) {
     const std::string uri = "local://./disk1/replica_pool_ssd_0_0/stable";
     const std::string uri_mixed = "local-mixed://merged_path=./disk1/merged_stable"
                                   "&&single_path=./disk1/replica_pool_ssd_0_0/stable";
@@ -345,7 +345,7 @@ TEST_F(TestUsageSuits, mixed_stable_storage_upgrade) {
     delete storage; 
 }
 
-TEST_F(TestUsageSuits, mixed_stable_storage_downgrade) {
+TEST_F(TestUsageSuite, mixed_stable_storage_downgrade) {
     const std::string uri_single = "local://./disk1/replica_pool_ssd_0_0/stable";
     const std::string uri_mixed = "local-mixed://merged_path=./disk1/merged_stable"
                                   "&&single_path=./disk1/replica_pool_ssd_0_0/stable";

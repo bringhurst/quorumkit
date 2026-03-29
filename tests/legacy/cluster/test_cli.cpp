@@ -10,15 +10,16 @@
 #include "braft/raft.h"
 #include "braft/cli.h"
 #include "braft/node.h"
+#include "support/fs_test_util.h"
 
 class CliTest : public testing::Test {
 public:
     void SetUp() {
         GFLAGS_NS::SetCommandLineOption("raft_sync", "false");
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     }
     void TearDown() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     }
 };
 

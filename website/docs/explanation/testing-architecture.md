@@ -7,27 +7,34 @@ sidebar_position: 9
 
 ## Current state
 
-The test directory contains 23 unit test files inherited from braft, all in `tests/`:
+The test tree is now split by authority instead of keeping every inherited test in one flat directory:
 
 ```text
 tests/
-  test_ballot.cpp              test_log_manager.cpp
-  test_ballot_box.cpp          test_memory_storage.cpp
-  test_checksum.cpp            test_meta.cpp
-  test_cli.cpp                 test_node.cpp
-  test_configuration.cpp       test_protobuf_file.cpp
-  test_file_service.cpp        test_repeated_timer_task.cpp
-  test_file_system_adaptor.cpp test_snapshot.cpp
-  test_fsm_caller.cpp          test_snapshot_executor.cpp
-  test_fsync.cpp               test_storage.cpp
-  test_leader_lease.cpp        test_throttle.cpp
-  test_log.cpp                 test_util.cpp
-  test_log_entry.cpp
-  util.h                       test helper (state machine, etc.)
-  sstream_workaround.h         header shim for white-box testing
+  public/
+    braft/                     public braft-facing contract tests
+    storage/                   public storage contract tests
+    wire/                      public wire-compat tests
+    migration/                 public rollout and migration tests
+  internal/
+    core/                      QuorumKit implementation tests
+    storage/                   internal storage implementation tests
+  legacy/
+    cluster/                   inherited upstream-style cluster tests
+    storage/                   inherited upstream-style storage tests
+  support/                     shared test helpers and shims
 ```
 
-All tests use Google Test. They compile with `-Dprivate=public -Dprotected=public` to access library internals (white-box testing). This is inherited from upstream braft and will be replaced as the QuorumKit public API takes shape.
+All tests use Google Test. Most of the inherited suite still compiles with `-Dprivate=public -Dprotected=public` to access library internals. That white-box access is now explicit in the directory layout: `tests/public/` is for public-facing behavior, while `tests/internal/` and most of `tests/legacy/` still lean on internals.
+
+The public tree now has the first contract smoke tests in place for:
+
+- `braft` API surface
+- runtime `braft` behavior (`EPERM`, `ANY_PEER` leadership transfer)
+- local storage URI compatibility
+- nested snapshot tree round-tripping
+- wire schema shape and snapshot-copy URI grammar
+- restart-safe migration smoke coverage for the legacy `local://` storage shape
 
 ## Test isolation
 
@@ -45,28 +52,27 @@ These are labeled `known_crash` in CMake and excluded from CI with `ctest -LE kn
 
 ## Test results
 
-20 of 23 tests pass. The 3 known-crash tests are excluded. A full passing run:
+The default run is green. It includes the currently stable inherited tests plus the first wave of public contract smoke tests. The 3 known-crash legacy tests are excluded. A full passing run:
 
 ```sh
 ctest --preset conan-release --output-on-failure -LE known_crash
 ```
 
-## Target state
+## Next step
 
-The long-term plan is to restructure tests to mirror the source tree:
+The next step is to make `tests/public/` match the written contracts more closely:
 
 ```text
 tests/
   public/
-    quorumkit/       tests against the QuorumKit public API
-    braft_compat/    tests against the braft compatibility API
-    wire_compat/     tests for mixed-version wire behavior
-    storage_contract/ tests for backend bootstrap and dual write
-    migration_contract/ tests for end-to-end rollout invariants
-  internal/          tests for internal modules
-  simulation/        deterministic simulation tests
+    braft/           tests against the documented braft compatibility contract
+    storage/         tests against the documented storage contract
+    wire/            tests for mixed-version wire behavior
+    migration/       tests for end-to-end rollout invariants
+  internal/          tests for internal modules and adapters
+  legacy/            inherited broad regression coverage
 ```
 
 The intent is to turn the contract pages in `website/docs/reference/` into executable conformance suites. The `braft` API contract, wire contract, storage contract, and rolling migration contract should all eventually map to test matrices rather than hand-wavy promises.
 
-Simulation tests will use an in-memory transport, deterministic clock, and in-memory storage -- everything in a single process with no real I/O. This makes it possible to test network partitions, message reordering, slow disks, and clock skew deterministically.
+Deterministic simulation tests may still be added later, but they are not a prerequisite for the current public/internal/legacy split.

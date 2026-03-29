@@ -20,13 +20,13 @@
 #include "braft/local_storage.pb.h"
 #include "braft/protobuf_file.h"
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
 };
 
-TEST_F(TestUsageSuits, protobuf_file) {
+TEST_F(TestUsageSuite, protobuf_file) {
     int ret = 0;
 
     braft::ProtoBufFile pb_file("./log.meta");

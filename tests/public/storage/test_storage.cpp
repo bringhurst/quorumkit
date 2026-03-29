@@ -4,22 +4,27 @@
 // Date: 2016/03/29 10:35:06
 
 #include <gtest/gtest.h>
+
+#include "support/fs_test_util.h"
 #include "braft/storage.h"
 
 namespace braft {
 extern void global_init_once_or_die();
 };
 
-class StorageTest : public testing::Test {
+class StorageContractTest : public testing::Test {
 protected:
-    void SetUp() {
-        system("rm -rf data");
+    void SetUp() override {
+        quorumkit::test::remove_path("data");
         braft::global_init_once_or_die();
     }
-    void TearDown() {}
+
+    void TearDown() override {
+        quorumkit::test::remove_path("data");
+    }
 };
 
-TEST_F(StorageTest, sanity) {
+TEST_F(StorageContractTest, AcceptsLegacyLocalUris) {
     // LogStorage
     braft::LogStorage* log_storage = braft::LogStorage::create("local://data/log");
     ASSERT_TRUE(log_storage);
@@ -52,7 +57,7 @@ TEST_F(StorageTest, sanity) {
 
 }
 
-TEST_F(StorageTest, extra_space_should_be_trimmed) {
+TEST_F(StorageContractTest, TrimsExtraWhitespaceInLocalUris) {
     // LogStorage
     braft::LogStorage* log_storage = braft::LogStorage::create("local://data/log");
     ASSERT_TRUE(log_storage);

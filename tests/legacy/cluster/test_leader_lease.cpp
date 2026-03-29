@@ -19,7 +19,8 @@
 #include "braft/util.h"
 #include "braft/node.h"
 #include "braft/lease.h"
-#include "../tests/util.h"
+#include "support/braft_test_util.h"
+#include "support/fs_test_util.h"
 
 namespace braft {
 DECLARE_bool(raft_enable_leader_lease);
@@ -29,7 +30,7 @@ DECLARE_int32(raft_election_heartbeat_factor);
 class BaseLeaseTest : public testing::Test {
 protected:
     void SetUp() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
         //logging::FLAGS_v = 90;
         braft::FLAGS_raft_sync = false;
         braft::FLAGS_raft_enable_leader_lease = true;
@@ -37,14 +38,14 @@ protected:
         g_dont_print_apply_log = true;
     }
     void TearDown() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     }
 };
 
 class ExtendLeaseTest : public testing::TestWithParam<int> {
 protected:
     void SetUp() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
         //logging::FLAGS_v = 90;
         braft::FLAGS_raft_sync = false;
         braft::FLAGS_raft_enable_leader_lease = true;
@@ -52,7 +53,7 @@ protected:
         peer_num = GetParam();
     }
     void TearDown() {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     }
 
     int peer_num;
@@ -120,7 +121,7 @@ void* check_lease_in_thread(void* arg) {
 }
 
 TEST_F(BaseLeaseTest, triple_node) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     for (int i = 0; i < 3; i++) {
         braft::PeerId peer;
@@ -237,7 +238,7 @@ TEST_F(BaseLeaseTest, triple_node) {
 }
 
 TEST_F(BaseLeaseTest, change_peers) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     braft::PeerId peer0;
     peer0.addr.ip = butil::my_ip();
@@ -297,7 +298,7 @@ TEST_F(BaseLeaseTest, change_peers) {
 }
 
 TEST_F(BaseLeaseTest, leader_remove_itself) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     braft::PeerId peer0;
     peer0.addr.ip = butil::my_ip();
@@ -369,7 +370,7 @@ TEST_F(BaseLeaseTest, leader_remove_itself) {
 }
 
 TEST_P(ExtendLeaseTest, transfer_leadership_success) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     for (int i = 0; i < peer_num; i++) {
         braft::PeerId peer;
@@ -419,7 +420,7 @@ TEST_P(ExtendLeaseTest, transfer_leadership_success) {
 }
 
 TEST_P(ExtendLeaseTest, transfer_leadership_timeout) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     for (int i = 0; i < peer_num; i++) {
         braft::PeerId peer;
@@ -465,7 +466,7 @@ TEST_P(ExtendLeaseTest, transfer_leadership_timeout) {
 }
 
 TEST_P(ExtendLeaseTest, vote) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     for (int i = 0; i < peer_num; i++) {
         braft::PeerId peer;
@@ -530,7 +531,7 @@ TEST_P(ExtendLeaseTest, vote) {
 }
 
 TEST_P(ExtendLeaseTest, leader_step_down) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> peers;
     for (int i = 0; i < peer_num; i++) {
         braft::PeerId peer;
@@ -593,7 +594,7 @@ public:
 };
 
 TEST_P(ExtendLeaseTest, apply_thread_hung) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LeaderLeaseStatus lease_status;
     std::vector<braft::PeerId> peers;
     std::vector<OnLeaderStartHungClosure*> on_leader_start_closures;
@@ -658,7 +659,7 @@ TEST_P(ExtendLeaseTest, apply_thread_hung) {
 }
 
 TEST_P(ExtendLeaseTest, chaos) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     std::vector<braft::PeerId> started_nodes;
     for (int i = 0; i < peer_num; i++) {
         braft::PeerId peer;
@@ -774,4 +775,4 @@ TEST_P(ExtendLeaseTest, chaos) {
     cluster.stop_all();
 }
 
-INSTANTIATE_TEST_CASE_P(ExtendLeaseTest, ExtendLeaseTest, ::testing::Values(3, 5));
+INSTANTIATE_TEST_SUITE_P(ExtendLeaseTest, ExtendLeaseTest, ::testing::Values(3, 5));

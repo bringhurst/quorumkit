@@ -15,7 +15,8 @@
 #include "braft/util.h"
 #include "braft/local_file_meta.pb.h"
 #include "braft/snapshot_throttle.h"
-#include "memory_file_system_adaptor.h"
+#include "support/fs_test_util.h"
+#include "support/memory_file_system_adaptor.h"
 
 namespace logging {
 DECLARE_int32(minloglevel);
@@ -90,7 +91,7 @@ TEST_F(SnapshotTest, writer_and_reader) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
     
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -209,7 +210,7 @@ TEST_F(SnapshotTest, copy) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -250,7 +251,7 @@ TEST_F(SnapshotTest, copy) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }
@@ -274,7 +275,7 @@ TEST_F(SnapshotTest, file_escapes_directory) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -492,7 +493,7 @@ TEST_F(SnapshotTest, filter_before_copy) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -546,8 +547,8 @@ TEST_F(SnapshotTest, filter_before_copy) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
-        ::system("rm -rf snapshot_temp");
+        quorumkit::test::remove_path("data2");
+        quorumkit::test::remove_path("snapshot_temp");
     } else {
         fs->delete_file("data2", true);
         fs->delete_file("snapshot_temp", true);
@@ -583,7 +584,7 @@ TEST_F(SnapshotTest, filter_before_copy) {
     ASSERT_EQ(0, writer2->save_meta(meta));
     ASSERT_EQ(0, storage2->close(writer2));
     if (fs == NULL) {
-        ::system("mv data2/snapshot_00000000000000000900 snapshot_temp");
+        quorumkit::test::move_path("data2/snapshot_00000000000000000900", "snapshot_temp");
     } else {
         fs->rename("data2/snapshot_00000000000000000900", "snapshot_temp");
     }
@@ -608,7 +609,7 @@ TEST_F(SnapshotTest, filter_before_copy) {
     ASSERT_EQ(0, storage2->close(writer2));
 
     if (fs == NULL) {
-        ::system("mv snapshot_temp data2/temp");
+        quorumkit::test::move_path("snapshot_temp", "data2/temp");
     } else {
         fs->rename("snapshot_temp", "data2/temp");
     }
@@ -648,7 +649,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_reading) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -699,7 +700,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_reading) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }
@@ -725,7 +726,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_writing) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -772,7 +773,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_writing) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }
@@ -812,7 +813,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_reading_without_enable_throttle) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -863,7 +864,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_reading_without_enable_throttle) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }
@@ -896,7 +897,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_writing_without_enable_throttle) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -943,7 +944,7 @@ TEST_F(SnapshotTest, snapshot_throttle_for_writing_without_enable_throttle) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }
@@ -979,7 +980,7 @@ TEST_F(SnapshotTest, dynamically_change_throttle_threshold) {
     FOR_EACH_FILE_SYSTEM_ADAPTOR_BEGIN(fs);
 
     if (fs == NULL) {
-        ::system("rm -rf data");
+        quorumkit::test::remove_path("data");
     } else {
         fs->delete_file("data", true);
     }
@@ -1026,7 +1027,7 @@ TEST_F(SnapshotTest, dynamically_change_throttle_threshold) {
 
     // storage2
     if (fs == NULL) {
-        ::system("rm -rf data2");
+        quorumkit::test::remove_path("data2");
     } else {
         fs->delete_file("data2", true);
     }

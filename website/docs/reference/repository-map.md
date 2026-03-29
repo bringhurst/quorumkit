@@ -9,7 +9,7 @@ sidebar_position: 8
 
 ```text
 src/          library source and headers (src/braft/)
-tests/        unit tests (test_*.cpp)
+tests/        test suites and shared test helpers
 examples/     runnable sample applications
 contrib/      local Conan recipes for deps not on Conan Center (brpc)
 website/      documentation site (this site)
@@ -20,7 +20,10 @@ conanfile.py  Conan 2 recipe declaring dependencies
 
 ```text
 src/braft/           library source, headers, and proto files
-tests/               23 test binaries (test_ballot, test_node, etc.)
+tests/public/        public-facing contract-oriented tests
+tests/internal/      QuorumKit implementation tests
+tests/legacy/        inherited upstream-style regression tests
+tests/support/       shared test helpers and shims
 examples/counter/    replicated counter demo
 examples/atomic/     compare-and-swap register demo
 examples/block/      block storage demo

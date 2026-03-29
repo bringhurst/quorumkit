@@ -13,7 +13,7 @@
 
 #include "braft/util.h"
 
-class TestUsageSuits : public testing::Test {
+class TestUsageSuite : public testing::Test {
 protected:
     void SetUp() {}
     void TearDown() {}
@@ -36,7 +36,7 @@ void* run_lock_guard(void *arg) {
     return NULL;
 }
 
-TEST_F(TestUsageSuits, lock) {
+TEST_F(TestUsageSuite, lock) {
     raft_mutex_t mutex;
 
     // bthread lock guard
@@ -56,7 +56,7 @@ TEST_F(TestUsageSuits, lock) {
     ASSERT_EQ(meta.value, 10*10000);
 }
 
-TEST_F(TestUsageSuits, murmurhash) {
+TEST_F(TestUsageSuite, murmurhash) {
     char* data = (char*)malloc(1024*1024);
     for (int i = 0; i < 1024*1024; i++) {
         data[i] = 'a' + i % 26;
@@ -73,7 +73,7 @@ TEST_F(TestUsageSuits, murmurhash) {
     free(data);
 }
 
-TEST_F(TestUsageSuits, pread_pwrite) {
+TEST_F(TestUsageSuite, pread_pwrite) {
     int fd = ::open("./pread_pwrite.data", O_CREAT | O_TRUNC | O_RDWR, 0644);
 
     butil::IOPortal portal;
@@ -94,7 +94,7 @@ TEST_F(TestUsageSuits, pread_pwrite) {
     ::unlink("./pread_pwrite.data");
 }
 
-TEST_F(TestUsageSuits, FileSegData) {
+TEST_F(TestUsageSuite, FileSegData) {
     braft::FileSegData seg_writer;
     for (uint64_t i = 0; i < 10UL; i++) {
         char buf[1024];
@@ -134,7 +134,7 @@ TEST_F(TestUsageSuits, FileSegData) {
     ASSERT_EQ(index, 20UL);
 }
 
-TEST_F(TestUsageSuits, crc32) {
+TEST_F(TestUsageSuite, crc32) {
     char* data = (char*)malloc(1024*1024);
     for (int i = 0; i < 1024*1024; i++) {
         data[i] = 'a' + i % 26;
@@ -205,7 +205,7 @@ int is_zero_memcmp(const char* buff, size_t size) {
         LOG(INFO) << #func << " cycle: " << end - start;     \
     } while (0)
 
-TEST_F(TestUsageSuits, is_zero) {
+TEST_F(TestUsageSuite, is_zero) {
     char* data = (char*)malloc(1024*1024);
     memset(data, 0, 1024*1024);
 
@@ -251,7 +251,7 @@ TEST_F(TestUsageSuits, is_zero) {
     free(data);
 }
 
-TEST_F(TestUsageSuits, file_path) {
+TEST_F(TestUsageSuite, file_path) {
     butil::FilePath path("dir/");
     LOG(INFO) << "dir_name=" << path.DirName().value()
               << " base_name=" << path.BaseName().value();

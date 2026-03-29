@@ -18,6 +18,7 @@
 #include "braft/util.h"
 #include "braft/log.h"
 #include "braft/storage.h"
+#include "support/fs_test_util.h"
 
 namespace braft {
 DECLARE_bool(raft_trace_append_entry_latency);
@@ -35,7 +36,7 @@ protected:
 
 TEST_F(LogStorageTest, open_segment) {
     // open segment operation
-    ::system("mkdir data/");
+    quorumkit::test::ensure_dir("data");
     braft::Segment* seg1 = new braft::Segment("./data", 1L, 0);
 
     // not open
@@ -251,7 +252,7 @@ TEST_F(LogStorageTest, closed_segment) {
 }
 
 TEST_F(LogStorageTest, multi_segment_and_segment_logstorage) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::SegmentLogStorage* storage = new braft::SegmentLogStorage("./data");
 
     // init
@@ -397,7 +398,7 @@ TEST_F(LogStorageTest, multi_segment_and_segment_logstorage) {
     delete storage;
 
     // re load
-    ::system("rm -rf data/log_meta");
+    quorumkit::test::remove_path("data/log_meta");
     braft::SegmentLogStorage* storage2 = new braft::SegmentLogStorage("./data");
     ASSERT_EQ(0, storage2->init(new braft::ConfigurationManager()));
     ASSERT_EQ(1, storage2->first_log_index());
@@ -406,7 +407,7 @@ TEST_F(LogStorageTest, multi_segment_and_segment_logstorage) {
 }
 
 TEST_F(LogStorageTest, append_close_load_append) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));
@@ -517,7 +518,7 @@ int append_corrupted_data(const char* filename) {
 }
 
 TEST_F(LogStorageTest, data_lost) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));
@@ -607,7 +608,7 @@ TEST_F(LogStorageTest, data_lost) {
 }
 
 TEST_F(LogStorageTest, full_segment_has_garbage) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));
@@ -688,7 +689,7 @@ TEST_F(LogStorageTest, full_segment_has_garbage) {
 }
 
 TEST_F(LogStorageTest, append_read_badcase) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));
@@ -794,7 +795,7 @@ TEST_F(LogStorageTest, append_read_badcase) {
 }
 
 TEST_F(LogStorageTest, configuration) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::SegmentLogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));
@@ -1203,7 +1204,7 @@ TEST_F(LogStorageTest, joint_configuration) {
 }
 
 TEST_F(LogStorageTest, append_close_load_append_with_io_metric) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::IOMetric metric;
     braft::FLAGS_raft_trace_append_entry_latency = true;
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
@@ -1296,7 +1297,7 @@ TEST_F(LogStorageTest, append_close_load_append_with_io_metric) {
 }
 
 TEST_F(LogStorageTest, data_corrupt) {
-    ::system("rm -rf data");
+    quorumkit::test::remove_path("data");
     braft::LogStorage* storage = new braft::SegmentLogStorage("./data");
     braft::ConfigurationManager* configuration_manager = new braft::ConfigurationManager;
     ASSERT_EQ(0, storage->init(configuration_manager));

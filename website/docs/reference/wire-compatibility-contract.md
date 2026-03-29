@@ -72,7 +72,7 @@ Changing those conventions would be a wire break even if the protobuf schemas we
 
 QuorumKit MUST preserve these compatibility encodings:
 
-- `peer_id` and `server_id` strings use the legacy `PeerId::to_string()` grammar, including the optional peer-index suffix used by existing deployments (`host:port[:idx]`)
+- `peer_id` and `server_id` strings use the legacy `PeerId::to_string()` grammar, whose canonical form is `host:port:idx:role` and whose parser continues to accept the shorter legacy forms that existing deployments use in practice (`host:port`, `host:port:idx`, and the full canonical form)
 - `group_id` remains the same application-level identifier used by legacy deployments
 - snapshot-copy URIs carried in `InstallSnapshotRequest.uri` remain consumable by legacy snapshot download logic built around `FileService`, including the legacy `remote://<server_addr>/<reader_id>` grammar emitted by `SnapshotReader::generate_uri_for_copy()`
 
