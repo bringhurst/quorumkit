@@ -1,37 +1,47 @@
-find_package(Gperftools)
-include_directories(${GPERFTOOLS_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_SOURCE_DIR}/test)
+# ---------------------------------------------------------------------------
+# Test targets
+# ---------------------------------------------------------------------------
 
-find_path(GTEST_HEADER NAMES gtest/gtest.h)
-find_library(GTEST_LIB NAMES gtest)
-find_library(GTEST_MAIN_LIB NAMES gtest_main)
+file(GLOB TEST_SRCS "test_*.cpp")
 
-set(CMAKE_CPP_FLAGS "-DGFLAGS_NS=${GFLAGS_NS}")
-set(CMAKE_CPP_FLAGS "${CMAKE_CPP_FLAGS} -D__const__=__unused__ -D_GNU_SOURCE -DUSE_SYMBOLIZE -DNO_TCMALLOC -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DUNIT_TEST -g -Dprivate=public -Dprotected=public -D__STRICT_ANSI__ -include sstream_workaround.h")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CMAKE_CPP_FLAGS} -O2 -pipe -Wall -W -fPIC -fstrict-aliasing -Wno-invalid-offsetof -Wno-unused-parameter -fno-omit-frame-pointer -Wno-unused-result")
-use_cxx11()
+foreach(TEST_SRC ${TEST_SRCS})
+    get_filename_component(TEST_NAME ${TEST_SRC} NAME_WE)
 
-# bthread_* functions are used in logging.cc, and they need to be marked as
-# weak symbols explicitly in Darwin system.
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set(DYNAMIC_LIB ${DYNAMIC_LIB}
-        "-Wl,-U,_bthread_getspecific"
-        "-Wl,-U,_bthread_setspecific"
-        "-Wl,-U,_bthread_key_create")
-endif()
+    add_executable(${TEST_NAME} ${TEST_SRC})
 
-file(GLOB TEST_BRAFT_SRCS "test_*.cpp")
-foreach(BRAFT_UT ${TEST_BRAFT_SRCS})
-    get_filename_component(BRAFT_UT_WE ${BRAFT_UT} NAME_WE)
-    add_executable(${BRAFT_UT_WE} ${BRAFT_UT} 
-                   $<TARGET_OBJECTS:OBJ_LIB>)
-    target_link_libraries(${BRAFT_UT_WE}
-        #"-Xlinker \"-(\""
-                          ${GTEST_MAIN_LIB}
-                          ${GTEST_LIB}
-                          ${GPERFTOOLS_LIBRARY}
-                          ${DYNAMIC_LIB}
-                          #                  "-Xlinker \"-)\""
-                          )
+    target_link_libraries(${TEST_NAME}
+        PRIVATE
+            braft
+            GTest::gtest_main
+            GTest::gtest
+    )
+
+    target_include_directories(${TEST_NAME}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}         # test helper headers (util.h etc.)
+            ${CMAKE_SOURCE_DIR}/src              # for "braft/..." includes
+            ${PROTO_OUT_DIR}                     # for generated pb headers
+    )
+
+    # Access private/protected members for white-box testing
+    target_compile_options(${TEST_NAME} PRIVATE
+        -Dprivate=public
+        -Dprotected=public
+        -include sstream_workaround.h
+        -O2 -pipe -Wall -W -fPIC -fstrict-aliasing
+        -Wno-invalid-offsetof -Wno-unused-parameter
+        -Wno-unused-result
+        -fno-omit-frame-pointer
+    )
+
+    # macOS: weak symbol references used in bthread logging
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        target_link_options(${TEST_NAME} PRIVATE
+            "-Wl,-U,_bthread_getspecific"
+            "-Wl,-U,_bthread_setspecific"
+            "-Wl,-U,_bthread_key_create"
+        )
+    endif()
+
+    add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 endforeach()
