@@ -9,7 +9,7 @@ QuorumKit needs to keep existing braft deployments working while moving the API 
 
 ## API compatibility
 
-The headers under `include/braft/` preserve the old braft API. Existing code that includes `braft/raft.h`, uses the `braft::` namespace, and calls the old admin and route-table functions will continue to compile and work. The braft headers are thin adapters that forward into the QuorumKit implementation -- there is no separate braft engine.
+The headers under `include/braft/` preserve the old braft API for the parts of braft that real applications commonly build against: nodes, state machines, tasks, snapshots, peer reconfiguration, leadership transfer, and the usual mockable interfaces around them. The braft headers are thin adapters that forward into the QuorumKit implementation -- there is no separate braft engine.
 
 ```mermaid
 flowchart LR
@@ -21,6 +21,8 @@ flowchart LR
 ```
 
 The goal is to let you migrate at your own pace. Existing code runs through the compatibility layer. New code targets the QuorumKit headers. Over time, you move the old code over. Nothing forces you to do it all at once.
+
+This is now documented as a real contract rather than a general promise. If your code stays inside the surface listed in [braft compatibility contract](../reference/braft-compatibility-contract), QuorumKit intends that code to remain a drop-in source-level match.
 
 ## Storage compatibility
 

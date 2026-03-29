@@ -32,16 +32,16 @@ The compatibility API. Existing braft code can keep using these headers -- they 
 
 ```text
 include/braft/
-  raft.h                 node and state machine types
-  configuration.h        peer configuration
-  cli.h                  admin CLI helpers
-  route_table.h          route table / discovery
-  storage.h              storage interfaces
-  util.h                 utilities
-  file_system_adaptor.h  filesystem adaptor
-  snapshot_throttle.h    snapshot throttle
-  protobuf_file.h        protobuf file helpers
+  raft.h                 core node, task, iterator, and state machine types
+  node.h                 node declarations used by mock-based test code
+  configuration.h        peer IDs and peer configuration
+  snapshot.h             snapshot reader/writer surface used by applications
+  storage.h              abstract snapshot interfaces used by tests
+  util.h                 utilities such as AsyncClosureGuard
+  errno.pb.h             Raft-specific error codes
 ```
+
+Other braft headers may exist, but the precise compatibility promise lives in [braft compatibility contract](./braft-compatibility-contract).
 
 ## How the two relate
 
@@ -53,4 +53,4 @@ flowchart LR
 
 The braft headers depend on the QuorumKit headers, not the other way around. QuorumKit defines the model; the braft layer adapts to it.
 
-For more on the design behind each surface, see [Canonical public API](../explanation/canonical-public-api) and [braft compatibility surface](../explanation/braft-compatibility-surface).
+For more on the design behind each surface, see [Canonical public API](../explanation/canonical-public-api), [braft compatibility surface](../explanation/braft-compatibility-surface), and [braft compatibility contract](./braft-compatibility-contract).
