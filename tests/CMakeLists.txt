@@ -142,16 +142,16 @@ endif()
 #
 # The ASan+UBSan job currently trips multiple upstream undefined-behavior bugs
 # in brpc/butil (alignment assumptions, logging nullability, object/resource
-# pool alignment) before QuorumKit test logic runs. We keep a tiny smoke subset
-# enabled and label the rest so CI can exclude them without disabling the build.
+# pool alignment) before or after QuorumKit test logic runs. We keep the
+# smallest practical smoke subset enabled and label the rest so CI can exclude
+# them without disabling the build entirely.
 # ---------------------------------------------------------------------------
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux"
    AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
    AND QUORUMKIT_SANITIZER_BUILD)
     foreach(T ${ALL_TEST_NAMES})
         if(TARGET ${T}
-           AND NOT T STREQUAL "test_ballot"
-           AND NOT T STREQUAL "test_protobuf_file")
+           AND NOT T STREQUAL "test_ballot")
             set_property(TEST ${T} APPEND PROPERTY LABELS "known_sanitizer_upstream_bug")
         endif()
     endforeach()

@@ -79,8 +79,8 @@ CI jobs exclude them via `ctest -LE 'known_crash|known_clang_crash'`.
 
 **Affected job:** `clang-21-sanitizers`.
 
-**Affected tests:** Most of the suite. In the failing CI run, all tests except
-`test_ballot` and `test_protobuf_file` aborted under UBSan.
+**Affected tests:** Effectively the whole suite. In the failing CI runs,
+almost every test aborted under UBSan, including `test_protobuf_file`.
 
 **Symptom:** The sanitizer job aborts in upstream brpc/butil code before most
 test logic completes. Representative failures include:
@@ -90,6 +90,10 @@ test logic completes. Representative failures include:
 - misaligned `ObjectPool` / `ResourcePool` construction in
   `butil/object_pool_inl.h` and `butil/resource_pool_inl.h`
 - misaligned reads in bundled MurmurHash3 code
+
+Even `test_protobuf_file`, whose own assertions pass, still aborts under UBSan
+because brpc's background bvar sampler thread hits the same misaligned
+`DirReaderLinux` access during process lifetime.
 
 There was also one QuorumKit-side UB in `src/braft/file_service.cpp`
 (`FileServiceImpl::_next_id`), which has been fixed locally.
@@ -101,9 +105,9 @@ protobuf 3.21.12.
 QuorumKit logic. They are serious enough to make a full-cluster UBSan run
 impractical today.
 
-**Workaround:** In sanitizer builds, all tests except `test_ballot` and
-`test_protobuf_file` are labeled `known_sanitizer_upstream_bug` in
-`tests/CMakeLists.txt`, and the sanitizer CI job excludes them via:
+**Workaround:** In sanitizer builds, all tests except `test_ballot` are labeled
+`known_sanitizer_upstream_bug` in `tests/CMakeLists.txt`, and the sanitizer CI
+job excludes them via:
 
 ```sh
 ctest --preset conan-debug --output-on-failure \

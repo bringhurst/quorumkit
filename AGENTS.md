@@ -98,7 +98,7 @@ There are 8 proto files in `src/braft/`. They have no standard protobuf imports 
 
 The 3 known-crash tests (`test_leader_lease`, `test_cli`, `test_node`) are documented in `UPSTREAM_BUGS.md`. These are real upstream braft memory-corruption bugs during configuration changes / leader failover.
 
-Linux Clang CI also excludes 3 additional upstream crashers (`test_file_service`, `test_snapshot`, `test_snapshot_executor`) via the `known_clang_crash` label. The sanitizer job is narrower still: upstream brpc/butil UBSan violations currently make most of the suite abort, so CI excludes tests labeled `known_sanitizer_upstream_bug` there.
+Linux Clang CI also excludes 3 additional upstream crashers (`test_file_service`, `test_snapshot`, `test_snapshot_executor`) via the `known_clang_crash` label. The sanitizer job is narrower still: upstream brpc/butil UBSan violations currently make almost the entire suite abort, so CI excludes tests labeled `known_sanitizer_upstream_bug` there and keeps only `test_ballot` enabled as a smoke test.
 
 ### Compile definitions
 
