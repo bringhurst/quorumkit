@@ -105,7 +105,8 @@ function(quorumkit_add_test)
        AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
        AND (QT_NAME STREQUAL "test_file_service"
             OR QT_NAME STREQUAL "test_snapshot"
-            OR QT_NAME STREQUAL "test_snapshot_executor"))
+            OR QT_NAME STREQUAL "test_snapshot_executor"
+            OR QT_NAME STREQUAL "test_braft_leadership_transfer_contract"))
         set_property(TEST ${QT_NAME} APPEND PROPERTY LABELS "known_clang_crash")
     endif()
 

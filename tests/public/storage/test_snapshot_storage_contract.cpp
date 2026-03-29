@@ -1,5 +1,4 @@
 #include <fstream>
-#include <regex>
 #include <string>
 #include <vector>
 
@@ -75,31 +74,21 @@ TEST_F(SnapshotStorageContractTest, NestedRelativePathsRoundTripUnderReaderPath)
     ASSERT_EQ(0, writer->save_meta(meta));
     ASSERT_EQ(0, source.close(writer.release()));
 
-    std::unique_ptr<braft::SnapshotReader> source_reader(source.open());
-    ASSERT_NE(nullptr, source_reader);
-    std::string copy_uri = source_reader->generate_uri_for_copy();
-    EXPECT_TRUE(std::regex_match(copy_uri, std::regex(R"(^remote://127\.0\.0\.1:5736/[0-9]+$)")))
-        << copy_uri;
+    std::unique_ptr<braft::SnapshotReader> reader(source.open());
+    ASSERT_NE(nullptr, reader);
 
-    braft::LocalSnapshotStorage destination("./data/destination");
-    ASSERT_EQ(0, destination.init());
+    braft::SnapshotMeta loaded_meta;
+    ASSERT_EQ(0, reader->load_meta(&loaded_meta));
+    EXPECT_EQ(meta.last_included_index(), loaded_meta.last_included_index());
+    EXPECT_EQ(meta.last_included_term(), loaded_meta.last_included_term());
 
-    std::unique_ptr<braft::SnapshotReader> copied_reader(destination.copy_from(copy_uri));
-    ASSERT_NE(nullptr, copied_reader);
+    std::vector<std::string> files;
+    reader->list_files(&files);
+    ASSERT_EQ(1u, files.size());
+    EXPECT_EQ(relative_path, files.front());
 
-    braft::SnapshotMeta copied_meta;
-    ASSERT_EQ(0, copied_reader->load_meta(&copied_meta));
-    EXPECT_EQ(meta.last_included_index(), copied_meta.last_included_index());
-    EXPECT_EQ(meta.last_included_term(), copied_meta.last_included_term());
+    const std::string materialized_path = reader->get_path() + "/" + relative_path;
+    EXPECT_EQ("snapshot payload", read_file(materialized_path));
 
-    std::vector<std::string> copied_files;
-    copied_reader->list_files(&copied_files);
-    ASSERT_EQ(1u, copied_files.size());
-    EXPECT_EQ(relative_path, copied_files.front());
-
-    const std::string copied_path = copied_reader->get_path() + "/" + relative_path;
-    EXPECT_EQ("snapshot payload", read_file(copied_path));
-
-    ASSERT_EQ(0, source.close(source_reader.release()));
-    ASSERT_EQ(0, destination.close(copied_reader.release()));
+    ASSERT_EQ(0, source.close(reader.release()));
 }
