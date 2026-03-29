@@ -1,6 +1,6 @@
 ---
 title: Repository map
-sidebar_position: 3
+sidebar_position: 8
 ---
 
 # Repository map

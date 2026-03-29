@@ -20,7 +20,8 @@ Everything else is a feature that makes the core useful in production:
 - **Discovery** -- finding peers and maintaining a route table.
 - **Witness support** -- non-voting members that receive the log but do not participate in elections or quorum.
 - **Leases** -- read leases that avoid the overhead of a full Raft read on every query.
-- **Storage migration** -- tools and patterns for moving between storage backends.
+- **Wire compatibility** -- keeping the legacy braft network protocol stable during mixed-version rollouts.
+- **Storage migration** -- bootstrap, dual write, validation, cutover, and rollback for moving between backend families.
 - **Telemetry** -- hooks for observing internal state and performance.
 - **Transport adapters** -- plugging in different network transports.
 

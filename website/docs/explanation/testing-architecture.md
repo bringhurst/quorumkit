@@ -60,8 +60,13 @@ tests/
   public/
     quorumkit/       tests against the QuorumKit public API
     braft_compat/    tests against the braft compatibility API
+    wire_compat/     tests for mixed-version wire behavior
+    storage_contract/ tests for backend bootstrap and dual write
+    migration_contract/ tests for end-to-end rollout invariants
   internal/          tests for internal modules
   simulation/        deterministic simulation tests
 ```
+
+The intent is to turn the contract pages in `website/docs/reference/` into executable conformance suites. The `braft` API contract, wire contract, storage contract, and rolling migration contract should all eventually map to test matrices rather than hand-wavy promises.
 
 Simulation tests will use an in-memory transport, deterministic clock, and in-memory storage -- everything in a single process with no real I/O. This makes it possible to test network partitions, message reordering, slow disks, and clock skew deterministically.

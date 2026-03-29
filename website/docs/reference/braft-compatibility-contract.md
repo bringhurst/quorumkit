@@ -1,6 +1,6 @@
 ---
 title: braft compatibility contract
-sidebar_position: 4
+sidebar_position: 2
 ---
 
 # braft compatibility contract
@@ -160,3 +160,5 @@ QuorumKit does intend to preserve a few behavior-level assumptions because exist
 - `ANY_PEER` continues to mean "pick a suitable follower" when transferring leadership
 
 Beyond that, the compatibility promise is deliberately narrow. If you need a specific behavior preserved, it should be documented here so it can become a test.
+
+For how this source-level contract fits into a live rollout, see [rolling migration contract](./rolling-migration-contract).

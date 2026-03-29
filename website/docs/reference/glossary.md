@@ -1,6 +1,6 @@
 ---
 title: Glossary
-sidebar_position: 5
+sidebar_position: 9
 ---
 
 # Glossary
@@ -22,3 +22,13 @@ sidebar_position: 5
 **Bootstrap** -- Initializing an empty destination backend family from the durable state exported by a source backend family.
 
 **Canonical bootstrap image** -- A backend-neutral representation of durable Raft state used to bootstrap one backend family from another without requiring pairwise migration adapters.
+
+**Wire compatibility** -- The requirement that QuorumKit continue speaking the legacy braft network protocol during mixed-version rollouts.
+
+**Rolling migration** -- Replacing nodes in a live cluster without a flag day for application code, wire protocol, or durable state.
+
+**Export cut** -- A logical point between durable mutations used to define one coherent storage snapshot for bootstrap and validation.
+
+**Validation cut** -- A named logical point in the durable mutation history used when comparing source and destination state.
+
+**Logical equivalence** -- Equality of Raft-visible durable state, without requiring identical on-disk bytes or layout.

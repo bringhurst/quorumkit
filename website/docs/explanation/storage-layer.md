@@ -34,6 +34,8 @@ The storage contracts are defined in `src/internal/storage/`. A new backend impl
 
 But in QuorumKit, "implements the storage interface" is not enough. A backend family is only considered complete if it can participate in migration. Every backend family must support dual write and bootstrap from any other backend family. That contract is written down in [Storage backend contract](../reference/storage-backend-contract).
 
+The crucial design choice is that bootstrap is backend-neutral. Each backend family exports and imports a [canonical bootstrap image](../reference/canonical-bootstrap-image) instead of growing a custom converter for every other backend family. That keeps migration design linear as new backends are added.
+
 The in-memory backends exist specifically for tests. They are fast, deterministic, and do not touch the filesystem, which makes them suitable for simulation testing alongside the in-memory transport and deterministic clock.
 
 ## Migrating between backends
@@ -48,4 +50,4 @@ The intended migration path is:
 4. validate equivalence
 5. cut over to `B`
 
-The key design choice is that bootstrap is backend-neutral. QuorumKit does not want every backend family to grow custom `A -> B` converters. Instead, each backend family imports and exports a canonical bootstrap representation, which makes the backend matrix manageable as new backends are added.
+The validation step is not a vague operational check. QuorumKit defines [state equivalence and validation](../reference/state-equivalence-and-validation) as part of the migration design so cutover and rollback decisions can later become tests instead of folklore.

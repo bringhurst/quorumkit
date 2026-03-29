@@ -9,6 +9,8 @@ If you have existing code that uses braft, you do not need to change it all at o
 
 The first question is not "how fast should I migrate?" It is "does my code stay inside the documented compatibility contract?" If it does, QuorumKit intends it to compile unchanged through the braft layer. See [braft compatibility contract](../reference/braft-compatibility-contract).
 
+If you are planning a live rollout rather than an offline replacement, the broader design is described in [rolling migration contract](../reference/rolling-migration-contract). That is the page that ties source compatibility, wire compatibility, and storage migration together.
+
 ## Recommended order
 
 1. **Keep running on the braft headers.** If your code only uses the documented compatibility surface, it should keep compiling and working through the compatibility layer.

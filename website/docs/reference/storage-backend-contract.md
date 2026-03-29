@@ -1,6 +1,6 @@
 ---
 title: storage backend contract
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 # storage backend contract
@@ -45,7 +45,7 @@ So the compatibility rule is:
 - backend family `A` satisfies "bootstrap to any other backend family" by exporting the canonical bootstrap image
 - backend family `B` satisfies "bootstrap from any other backend family" by importing the canonical bootstrap image
 
-Backend-specific direct converters may exist, but they are not the compatibility contract.
+Backend-specific direct converters may exist, but they are not the compatibility contract. The required common representation is defined in [canonical bootstrap image](./canonical-bootstrap-image).
 
 ## Canonical bootstrap contents
 
@@ -80,7 +80,7 @@ In this contract, equivalent means:
 - `A` and `B` expose the same latest snapshot metadata
 - `A` and `B` expose the same logical snapshot contents through the snapshot reader contract
 
-Equivalent does not require identical on-disk layout. Different backend families are free to serialize and organize bytes differently as long as the Raft-visible state is the same.
+Equivalent does not require identical on-disk layout. Different backend families are free to serialize and organize bytes differently as long as the Raft-visible state is the same. The comparison rules are defined in [state equivalence and validation](./state-equivalence-and-validation).
 
 ## Dual-write requirements
 
@@ -130,3 +130,5 @@ This contract does not require:
 - pairwise custom migration code for every backend combination
 
 It does require equivalent Raft-visible durable state and a repeatable migration path.
+
+For how this storage contract fits into a full cluster rollout, see [rolling migration contract](./rolling-migration-contract).
